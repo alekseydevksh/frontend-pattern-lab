@@ -36,5 +36,9 @@
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3",
     "vitest": "^5.1.1"
+  },
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=24"
   }
 }
