@@ -1,10 +1,16 @@
 // Minimal static file server for the `out/` export. No dependencies.
 import { createServer } from 'node:http';
+import { existsSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 
 const root = resolve(process.env.OUT_DIR ?? 'out');
 const port = Number(process.env.PORT ?? 3000);
+
+if (!existsSync(root)) {
+  console.error(`No export found at ${root}. Run \`pnpm build\` first.`);
+  process.exit(1);
+}
 
 const types = {
   '.html': 'text/html; charset=utf-8',
