@@ -1,0 +1,10 @@
+{
+  "site": {
+    "name": "Frontend Pattern Lab",
+    "description": "Short animated lessons on frontend architecture patterns for large React applications."
+  },
+  "home": {
+    "heading": "Frontend Pattern Lab",
+    "placeholder": "Lessons are on their way."
+  }
+}
