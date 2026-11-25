@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontend Pattern Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a drafting-table workbench. One stage card with an animated diagram on the left, a numbered step card on the right. */
+:root{
+  --paper:#edf0f5; --panel:#fafbfd; --ink:#16213a; --muted:#59667f; --line:#c8d0de; --grid:#dde3ed;
+  --req:#e0562b; --res:#0d8587; --ev:#6c4fe0; --bad:#c42248;
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --shadow:0 1px 0 rgba(22,33,58,.06),0 10px 28px -14px rgba(22,33,58,.28);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0c1426; --panel:#121d36; --ink:#e7ecf8; --muted:#97a5c3; --line:#2a3a5c; --grid:#15213d;
+    --req:#ff7d52; --res:#38c3c5; --ev:#a592ff; --bad:#ff6384;
+    --shadow:0 1px 0 rgba(0,0,0,.3),0 10px 28px -14px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0c1426; --panel:#121d36; --ink:#e7ecf8; --muted:#97a5c3; --line:#2a3a5c; --grid:#15213d;
+  --req:#ff7d52; --res:#38c3c5; --ev:#a592ff; --bad:#ff6384;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 10px 28px -14px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:32px 32px;
+  color:var(--ink);
+  font:400 15px/1.55 var(--body);
+}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--ev);outline-offset:2px}
+code,kbd{font-family:var(--mono)}
+
+.app{max-width:1240px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+
+/* top bar */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+.brand{display:flex;align-items:center;gap:10px;font:800 21px/1 var(--display);letter-spacing:-.02em}
+.mark{width:30px;height:30px;border:2px solid var(--ink);border-radius:8px;position:relative;background:var(--panel)}
+.mark::before,.mark::after{content:"";position:absolute;border-radius:50%}
+.mark::before{width:8px;height:8px;background:var(--req);left:4px;top:4px}
+.mark::after{width:8px;height:8px;background:var(--res);right:4px;bottom:4px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.tab{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 12px;font-weight:500}
+.tab i{font:600 11px var(--mono);font-style:normal;color:var(--muted)}
+.tab[aria-current="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tab[aria-current="true"] i{color:var(--paper);opacity:.7}
+.iconbtn{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 12px;font-weight:500}
+
+/* layout */
+.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:920px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.stage{padding:20px;min-width:0}
+.side{padding:20px}
+
+/* lesson header */
+.crumb{font:500 12px var(--mono);color:var(--muted);letter-spacing:.04em}
+h1{font:800 clamp(26px,3.4vw,38px)/1.05 var(--display);margin:6px 0 10px;letter-spacing:-.02em;text-wrap:balance}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:500 12px var(--mono);border:1.5px solid var(--line);border-radius:999px;padding:2px 10px;background:var(--paper)}
+.sub{color:var(--muted);margin:12px 0 14px;max-width:64ch}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.metric{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--paper);min-width:0}
+.metric small{display:block;font:500 10.5px var(--mono);letter-spacing:.1em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric b{display:block;font:600 17px/1.3 var(--mono);font-variant-numeric:tabular-nums;transition:color .25s}
+.metric b.bad{color:var(--bad)} .metric b.good{color:var(--res)}
+.stagewrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:12px;background:var(--paper)}
+#scene{display:block;width:100%;min-width:540px;height:auto}
+
+/* progress */
+.progress{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.progress .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.cap{font:500 11px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.dots{display:flex;align-items:center;flex:1}
+.dot{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:var(--panel);font:600 12px var(--mono);flex:none;display:grid;place-items:center;padding:0}
+.dot.done{border-color:var(--res);color:var(--res)}
+.dot.cur{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.seg{flex:1;height:2px;background:var(--line);min-width:4px}
+.seg.done{background:var(--res)}
+.tools{display:flex;gap:8px}
+.tool{border:1.5px solid var(--line);background:var(--panel);border-radius:10px;padding:5px 12px;font:500 12px var(--mono)}
+
+/* step card */
+.stephead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.pill{--c:var(--muted);font:600 11px var(--mono);letter-spacing:.1em;color:var(--c);border:1.5px solid var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);border-radius:999px;padding:2px 10px}
+.pill[data-tone="bad"]{--c:var(--bad)} .pill[data-tone="res"]{--c:var(--res)}
+.pill[data-tone="ev"]{--c:var(--ev)} .pill[data-tone="req"]{--c:var(--req)}
+h2{font:800 25px/1.12 var(--display);letter-spacing:-.015em;margin:0 0 10px;text-wrap:balance}
+.body p{margin:0 0 10px;max-width:60ch}
+.body code{font-size:.88em;background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+.idea{--c:var(--ev);border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) 10%,transparent);border-radius:0 10px 10px 0;padding:10px 14px;margin:14px 0}
+.idea small{display:block;font:600 10.5px var(--mono);letter-spacing:.12em;color:var(--c);margin-bottom:2px}
+pre.code{margin:0 0 14px;padding:12px 14px;background:var(--paper);border:1.5px solid var(--line);border-radius:10px;overflow-x:auto;font:400 12.5px/1.6 var(--mono);color:var(--ink)}
+pre.code[hidden]{display:none}
+.nav{display:flex;gap:10px}
+.btn{border:1.5px solid var(--ink);border-radius:12px;padding:10px 16px;font-weight:600;background:var(--panel);display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.primary{background:var(--ink);color:var(--paper);flex:1}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.hint{font:400 11.5px var(--mono);color:var(--muted);margin-top:10px}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--paper);font-size:11px}
+
+.learn{padding:18px 20px}
+.learn ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.learn li{display:flex;gap:10px;align-items:flex-start;color:var(--muted);transition:color .25s}
+.learn li::before{content:"";flex:none;width:16px;height:16px;margin-top:3px;border:1.5px solid var(--line);border-radius:4px;background:var(--paper)}
+.learn li.on{color:var(--ink)}
+.learn li.on::before{background:var(--res);border-color:var(--res);box-shadow:inset 0 0 0 3px var(--panel)}
+
+.foot{color:var(--muted);font-size:12.5px;max-width:90ch}
+.foot a{color:var(--ink)}
+
+/* svg scene */
+svg text{font-family:var(--body)}
+.pnl{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.cardbg{fill:var(--paper);stroke:var(--line);stroke-width:1.5}
+.scap{font:500 11px var(--mono)!important;letter-spacing:.12em;fill:var(--muted)}
+.tx{font:600 15px var(--body)!important;fill:var(--ink)}
+.ph{fill:var(--line)}
+.btnr{fill:var(--panel);stroke:var(--ink);stroke-width:1.5;transition:fill .25s,stroke .25s,opacity .25s}
+.btnr.on{fill:var(--req);stroke:var(--req)}
+.btnr.pend{stroke-dasharray:4 3;opacity:.65}
+.btnl{font:600 14px var(--body)!important;fill:var(--ink);transition:fill .25s}
+.btnl.on{fill:var(--panel)}
+.val{font:600 20px var(--mono)!important;fill:var(--ink)}
+.st{font:500 12.5px var(--body)!important;fill:var(--muted);transition:fill .25s}
+.k-ok{fill:var(--res)} .k-bad{fill:var(--bad)} .k-wait{fill:var(--req)}
+.sk{font:500 12px var(--mono)!important;fill:var(--muted)}
+.sv{font:600 28px var(--mono)!important;fill:var(--ink)}
+.snapr{fill:none;stroke:var(--ev);stroke-width:1.5;stroke-dasharray:4 3}
+.snapt{font:500 10.5px var(--mono)!important;fill:var(--ev)}
+.toastr{fill:var(--bad)}
+.toastt{font:500 12px var(--body)!important;fill:#fff}
+.lane{stroke:var(--line);stroke-width:2;stroke-dasharray:3 5}
+.axis{stroke:var(--line);stroke-width:2}
+.mk{transition:transform .5s ease,opacity .3s}
+.mkt{font:500 11px var(--mono)!important}
+.pkt{font:600 10.5px var(--mono)!important;fill:var(--ink);stroke:var(--paper);stroke-width:4px;paint-order:stroke;stroke-linejoin:round}
+.pkc{fill:var(--c)}
+.fade{transition:opacity .3s}
+.hide{opacity:0}
+.rowr{fill:var(--panel);stroke:var(--line);stroke-width:1.5;transition:stroke .25s}
+.rowr.stale{stroke:var(--bad);stroke-dasharray:4 3}
+.rowr.fresh{stroke:var(--res)}
+.rn{font:500 13px var(--body)!important;fill:var(--ink)}
+.rs{font:600 11.5px var(--mono)!important;fill:var(--muted);transition:fill .25s}
+.s-pending{fill:var(--req)} .s-signed{fill:var(--res)} .s-wait{fill:var(--ev)}
+.badgec{fill:var(--req)} .badget{font:600 12px var(--mono)!important;fill:#fff}
+.evt{font:500 11px var(--mono)!important;fill:var(--ev)}
+.sockd{transition:fill .3s}
+.vrow{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.vpill{stroke-width:1.5}
+.vpill.ok{fill:color-mix(in srgb,var(--res) 18%,var(--panel));stroke:var(--res)}
+.vpill.warn{fill:color-mix(in srgb,var(--req) 18%,var(--panel));stroke:var(--req)}
+.vb{font:600 12px var(--mono)!important;fill:var(--ink)}
+.va{font:500 15px var(--body)!important;fill:var(--ink)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>Pattern Lab</div>
+    <nav class="tabs" id="tabs" aria-label="Lessons"></nav>
+    <button class="iconbtn" id="theme" type="button" aria-label="Toggle dark theme">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.8a6.2 6.2 0 0 0 0 12.4z" fill="currentColor"/></svg>
+      Theme
+    </button>
+  </header>
+
+  <main class="grid">
+    <section class="card stage" aria-labelledby="ltitle">
+      <div class="crumb" id="crumb"></div>
+      <h1 id="ltitle"></h1>
+      <div class="chips" id="chips"></div>
+      <p class="sub" id="lsub"></p>
+      <div class="metrics" id="metrics"></div>
+      <div class="stagewrap"><svg id="scene" role="img" aria-label="Animated diagram of the current step"></svg></div>
+      <div class="progress">
+        <div class="row">
+          <span class="cap" id="where"></span>
+          <div class="tools">
+            <button class="tool" id="replay" type="button">Replay</button>
+            <button class="tool" id="pause" type="button">Pause</button>
+          </div>
+        </div>
+        <div class="dots" id="dots"></div>
+      </div>
+    </section>
+
+    <div class="col">
+      <section class="card side" aria-live="polite">
+        <div class="stephead"><span class="cap" id="stepno"></span><span class="pill" id="pill"></span></div>
+        <h2 id="stitle"></h2>
+        <div class="body" id="sbody"></div>
+        <div class="idea" id="idea"><small>KEY IDEA</small><span id="ideat"></span></div>
+        <pre class="code" id="code" hidden></pre>
+        <div class="nav">
+          <button class="btn" id="back" type="button">Back</button>
+          <button class="btn primary" id="next" type="button"></button>
+        </div>
+        <div class="hint"><kbd>←</kbd> <kbd>→</kbd> step · <kbd>R</kbd> replay · <kbd>Space</kbd> pause</div>
+      </section>
+      <section class="card learn">
+        <div class="cap">YOU'LL LEARN</div>
+        <ul id="learn"></ul>
+      </section>
+    </div>
+  </main>
+
+  <p class="foot">Prototype. Lesson content is a rewrite of ideas from
+    <a href="https://medium.com/@dmitriilobanov3/frontend-system-design-patterns-for-large-scale-react-applications-699ef9bb3b1d">“Frontend System Design Patterns for Large-Scale React Applications”</a>
+    by Dmitrii Lobanov. The step-by-step diagram format is inspired by
+    <a href="https://designed-to-scale.vercel.app">designed-to-scale.vercel.app</a>. Latencies in the diagrams are simulated.</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+var el=function(id){return document.getElementById(id);};
+var txt=function(id,v){var e=el(id); if(e) e.textContent=(v==null?'':v);};
+var setc=function(id,c){var e=el(id); if(e) e.setAttribute('class',c);};
+var stt=function(id,o){setc(id,'st '+(o&&o.k?'k-'+o.k:'')); txt(id,o?o.t:'');};
+var REDUCED=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- shared svg pieces ---------- */
+function pk(id,y){return '<g id="pk-'+id+'" style="opacity:0"><text class="pkt" y="-15" text-anchor="middle"></text><circle class="pkc" r="7"/></g>';}
+function verdict(title,rows,top){
+  var s='<g id="verdict" class="fade hide" style="pointer-events:none">';
+  s+='<text class="scap" x="32" y="'+(top-14)+'">'+title+'</text>';
+  rows.forEach(function(r,i){
+    var y=top+i*46;
+    s+='<rect class="vrow" x="32" y="'+y+'" width="576" height="38" rx="10"/>';
+    s+='<text class="va" x="48" y="'+(y+24)+'">'+r[0]+'</text>';
+    s+='<rect class="vpill '+r[2]+'" x="408" y="'+(y+7)+'" width="184" height="24" rx="12"/>';
+    s+='<text class="vb" x="500" y="'+(y+23)+'" text-anchor="middle">'+r[1]+'</text>';
+  });
+  return s+'</g>';
+}
+
+/* ---------- scene 1: optimistic UI ---------- */
+var Scene1={
+  vb:'0 0 640 364',
+  lanes:{main:{x1:252,x2:388,y:130}},
+  build:function(){
+    return '<g id="dev" class="fade">'+
+    '<rect class="pnl" x="16" y="16" width="236" height="262" rx="14"/>'+
+    '<text class="scap" x="32" y="40">BROWSER</text>'+
+    '<rect class="cardbg" x="32" y="52" width="204" height="150" rx="10"/>'+
+    '<text id="ui-title" class="tx" x="48" y="80"></text>'+
+    '<rect class="ph" x="48" y="94" width="150" height="7" rx="3.5"/>'+
+    '<rect class="ph" x="48" y="108" width="112" height="7" rx="3.5"/>'+
+    '<rect id="ui-btn" class="btnr" x="48" y="130" width="92" height="38" rx="19"/>'+
+    '<text id="ui-btnl" class="btnl" x="94" y="154" text-anchor="middle"></text>'+
+    '<text id="ui-val" class="val" x="154" y="155"></text>'+
+    '<text id="ui-status" class="st" x="48" y="190"></text>'+
+    '<g id="snap" class="fade"><rect class="snapr" x="32" y="212" width="204" height="26" rx="7"/><text class="snapt" x="44" y="229">snapshot  liked=false · 128</text></g>'+
+    '<g id="toast" class="fade"><rect class="toastr" x="32" y="244" width="204" height="26" rx="7"/><text id="toast-t" class="toastt" x="44" y="261"></text></g>'+
+    '<rect class="pnl" x="388" y="16" width="236" height="262" rx="14"/>'+
+    '<text class="scap" x="404" y="40">SERVER</text>'+
+    '<rect class="cardbg" x="404" y="52" width="204" height="150" rx="10"/>'+
+    '<text class="scap" x="420" y="80">DATABASE</text>'+
+    '<text id="srv-key" class="sk" x="420" y="116"></text>'+
+    '<text id="srv-val" class="sv" x="420" y="154"></text>'+
+    '<text id="srv-note" class="st" x="420" y="188"></text>'+
+    '<line class="lane" x1="252" y1="130" x2="388" y2="130"/>'+
+    '<text class="scap" x="320" y="156" text-anchor="middle">HTTP</text>'+
+    '<line class="axis" x1="16" y1="332" x2="624" y2="332"/>'+
+    '<text class="scap" x="624" y="356" text-anchor="end">TIME →</text>'+
+    '<g id="mk-ui" class="mk" style="opacity:0"><circle cy="332" r="6" fill="var(--req)"/><text id="mk-ui-t" class="mkt" y="316" fill="var(--req)"></text></g>'+
+    '<g id="mk-srv" class="mk" style="opacity:0"><circle cy="332" r="6" fill="var(--res)"/><text id="mk-srv-t" class="mkt" y="354" fill="var(--res)"></text></g>'+
+    pk('main')+
+    '</g>'+
+    verdict('IS IT SAFE TO UPDATE FIRST?',[
+      ['Like a post','Optimistic','ok'],
+      ['Save an item','Optimistic','ok'],
+      ['Mark a notification as read','Optimistic','ok'],
+      ['Sign a document','Pending state','warn'],
+      ['Send a payment','Pending state','warn']],70);
+  },
+  mk:function(id,t,label,below){
+    var g=el(id); if(t==null){g.style.opacity=0;return;}
+    var x=16+t/800*608; g.style.opacity=1; g.style.transform='translate('+x+'px,0)';
+    var te=el(id+'-t'); te.textContent=label+' · '+t+' ms';
+    te.setAttribute('text-anchor',x<110?'start':(x>520?'end':'middle'));
+    te.setAttribute('x',x<110?-8:(x>520?8:0));
+  },
+  draw:function(s){
+    txt('ui-title',s.title); txt('ui-btnl',s.btn); txt('ui-val',s.val);
+    setc('ui-btn','btnr'+(s.btnOn?' on':'')+(s.btnPend?' pend':''));
+    setc('ui-btnl','btnl'+(s.btnOn?' on':''));
+    stt('ui-status',s.status);
+    el('snap').classList.toggle('hide',!s.snapshot);
+    el('toast').classList.toggle('hide',!s.toast); if(s.toast) txt('toast-t',s.toast);
+    txt('srv-key',s.srvKey); txt('srv-val',s.srvVal); stt('srv-note',s.srvNote);
+    this.mk('mk-ui',s.tUi,'UI changes'); this.mk('mk-srv',s.tSrv,'Server answers');
+  },
+  metrics:function(s){return s.m.map(function(v){return [v,v==='yes'?'bad':''];});},
+  base:function(){return {title:'Post by Alex',btn:'Like',btnOn:false,btnPend:false,val:'128',status:{t:'',k:''},snapshot:false,toast:'',
+    srvKey:'likes',srvVal:'128',srvNote:{t:'',k:''},tUi:null,tSrv:null,m:['—','—','—']};}
+};
+
+/* ---------- scene 2: push + pull ---------- */
+var DOCS=['Lease.pdf','NDA.pdf','Invoice 77'];
+var Scene2={
+  vb:'0 0 640 312',
+  lanes:{push:{x1:388,x2:252,y:120},pull:{x1:252,x2:388,y:210}},
+  build:function(){
+    var s='<g id="dev" class="fade">'+
+    '<rect class="pnl" x="16" y="16" width="236" height="280" rx="14"/>'+
+    '<text class="scap" x="32" y="40">BROWSER</text>'+
+    '<rect class="cardbg" x="32" y="52" width="204" height="236" rx="10"/>'+
+    '<text class="tx" x="48" y="77">Documents</text>'+
+    '<g id="badge"><circle class="badgec" cx="212" cy="70" r="12"/><text id="badge-t" class="badget" x="212" y="74.5" text-anchor="middle"></text></g>'+
+    '<rect class="pnl" x="388" y="16" width="236" height="280" rx="14"/>'+
+    '<text class="scap" x="404" y="40">SERVER</text>'+
+    '<rect class="cardbg" x="404" y="52" width="204" height="236" rx="10"/>'+
+    '<text class="tx" x="420" y="77">Source of truth</text>';
+    DOCS.forEach(function(n,i){
+      var y=90+i*44;
+      s+='<rect id="ru'+i+'" class="rowr" x="44" y="'+y+'" width="180" height="36" rx="8"/>'+
+         '<text class="rn" x="56" y="'+(y+23)+'">'+n+'</text><text id="su'+i+'" class="rs" x="212" y="'+(y+23)+'" text-anchor="end"></text>'+
+         '<rect class="rowr" x="416" y="'+y+'" width="180" height="36" rx="8"/>'+
+         '<text class="rn" x="428" y="'+(y+23)+'">'+n+'</text><text id="ss'+i+'" class="rs" x="584" y="'+(y+23)+'" text-anchor="end"></text>';
+    });
+    s+='<text id="evnote" class="evt" x="48" y="236"></text>'+
+    '<g id="toast" class="fade"><rect class="toastr" x="44" y="246" width="180" height="30" rx="8"/><text id="toast-t" class="toastt" x="56" y="265"></text></g>'+
+    '<line class="lane" x1="252" y1="120" x2="388" y2="120"/>'+
+    '<text class="scap" x="320" y="102" text-anchor="middle">PUSH</text>'+
+    '<text class="scap" x="320" y="144" text-anchor="middle">WEBSOCKET</text>'+
+    '<line class="lane" x1="252" y1="210" x2="388" y2="210"/>'+
+    '<text class="scap" x="320" y="192" text-anchor="middle">PULL</text>'+
+    '<text class="scap" x="320" y="234" text-anchor="middle">HTTP</text>'+
+    '<circle id="sock-d" class="sockd" cx="266" cy="64" r="4.5"/><text id="sock-t" class="scap" x="278" y="68"></text>'+
+    pk('push')+pk('pull')+'</g>'+
+    verdict('WHICH ONE DOES THE JOB?',[
+      ['First screen load','Pull','ok'],
+      ['Something changed on the server','Push','warn'],
+      ['Socket reconnected','Pull','ok'],
+      ['What is true right now?','Pull','ok']],64);
+    return s;
+  },
+  draw:function(s){
+    for(var i=0;i<3;i++){
+      var u=s.ui[i], v=s.srv[i], rf=(s.refetch===i);
+      var label=rf?'refreshing':(u==null?'···':u);
+      var cl=rf?'rs s-wait':(u==null?'rs':'rs s-'+u);
+      setc('su'+i,cl); txt('su'+i,label);
+      var sc='rowr'; if(u!=null&&!rf&&u!==v) sc+=' stale'; else if(rf) sc+=' fresh';
+      setc('ru'+i,sc);
+      setc('ss'+i,'rs s-'+v); txt('ss'+i,v);
+    }
+    el('badge').style.opacity=(s.badge==null?0:1); txt('badge-t',s.badge);
+    el('toast').classList.toggle('hide',!s.toast); if(s.toast) txt('toast-t',s.toast);
+    txt('evnote',s.event?'↳ event: '+s.event:'');
+    var up=s.socket==='open';
+    el('sock-d').setAttribute('fill',up?'var(--res)':'var(--bad)'); txt('sock-t','socket '+s.socket);
+  },
+  metrics:function(s){
+    var inSync=s.loaded&&s.ui.every(function(v,i){return v!=null&&v===s.srv[i];});
+    var sync=!s.loaded?['—','']:(inSync?['in sync','good']:['stale','bad']);
+    return [sync,[s.socket,s.socket==='down'?'bad':'good'],[s.badge==null?'—':String(s.badge),'']];
+  },
+  base:function(){return {ui:['pending','pending','signed'],srv:['pending','pending','signed'],badge:2,toast:'',socket:'open',refetch:-1,loaded:true,event:null};}
+};
+
+/* ---------- lessons ---------- */
+var L1={
+  id:'optimistic-ui',n:1,title:'Optimistic UI',section:'State and updates',min:'4 min',level:'Intermediate',
+  sub:'Update the screen first, confirm with the server second, and undo cleanly when the server says no.',
+  metricLabels:['UI CHANGES AT','SERVER ANSWERS AT','ROLLBACK'],
+  scene:Scene1,
+  learn:['Why waiting for the server makes small actions feel slow','How to update first and send the request in the background','What a rollback needs: a snapshot and a visible error','Which actions should never be optimistic'],
+  steps:[
+    {tag:'PROBLEM',tone:'bad',short:'Update first',learn:0,title:'Waiting makes a tap feel broken',
+     body:['<p>Tap Like. The request leaves, the server writes the change, the answer comes back, and only then does the button change.</p><p>On a fast connection that is a blink. On a train it is a visible pause, and people tap twice. Here the round trip is a simulated 600 ms.</p>'],
+     idea:'The user pays the full latency before seeing any result.',
+     frames:[
+      {t:300,set:{btnPend:true,status:{t:'Waiting for server…',k:'wait'}},packet:{lane:'main',label:'POST /like',tone:'req'}},
+      {t:1200,set:{srvVal:'129',srvNote:{t:'saved',k:'ok'},tSrv:600},packet:{lane:'main',dir:'back',label:'200 OK',tone:'res'}},
+      {t:2100,set:{btnPend:false,btn:'Liked',btnOn:true,val:'129',status:{t:'Saved',k:'ok'},tUi:600,m:['600 ms','600 ms','—']}}]},
+    {tag:'TECHNIQUE',tone:'res',short:'Server can say no',learn:1,title:'Update first, ask later',
+     body:['<p>Change the cache in the same moment as the click. The button fills, the count goes up, and the request leaves in the background.</p><p>The server answers no faster than before, but the user no longer waits for it.</p>'],
+     idea:'The screen answers in 0 ms and the network catches up.',
+     code:'onLike() {\n  cache.set(post.id, withLike(post)); // screen changes now\n  api.like(post.id);                  // network catches up\n}',
+     frames:[
+      {t:300,set:{btn:'Liked',btnOn:true,val:'129',status:{t:'Saving in background…',k:'wait'},tUi:0,m:['0 ms','—','—']},packet:{lane:'main',label:'POST /like',tone:'req'}},
+      {t:1200,set:{srvVal:'129',srvNote:{t:'saved',k:'ok'},tSrv:600,m:['0 ms','600 ms','no']},packet:{lane:'main',dir:'back',label:'200 OK',tone:'res'}},
+      {t:2100,set:{status:{t:'Saved',k:'ok'}}}]},
+    {tag:'FAILURE',tone:'bad',short:'Keep a snapshot',learn:2,title:'The server can still say no',
+     body:['<p>A permission check, a deleted post or a dropped connection can reject the request after the screen has already changed.</p><p>If nothing undoes the change, the UI shows something that never happened.</p>'],
+     idea:'Optimism is a bet. Pay it back when you lose.',
+     frames:[
+      {t:300,set:{btn:'Liked',btnOn:true,val:'129',status:{t:'Saving in background…',k:'wait'},tUi:0,m:['0 ms','—','—']},packet:{lane:'main',label:'POST /like',tone:'req'}},
+      {t:1200,set:{srvNote:{t:'rejected · 403',k:'bad'},tSrv:600},packet:{lane:'main',dir:'back',label:'403',tone:'bad'}},
+      {t:2100,set:{btn:'Like',btnOn:false,val:'128',status:{t:'Failed. Rolled back.',k:'bad'},toast:'Could not like. Try again.',m:['0 ms','600 ms','yes']}}]},
+    {tag:'IMPLEMENTATION',tone:'ev',short:'Where it does not belong',learn:2,title:'Keep a snapshot for the way back',
+     body:['<p>Before you change the cache, hold on to the value you are replacing. A failed request restores it exactly.</p><p>Pair the rollback with a message that says what went wrong and how to retry.</p>'],
+     idea:'Snapshot, update, then confirm or restore.',
+     code:'const previous = cache.get(id);\ncache.set(id, { ...previous, liked: true, likes: previous.likes + 1 });\ntry { await api.like(id); }\ncatch { cache.set(id, previous); toast("Could not like. Try again."); }',
+     base:{snapshot:true},
+     frames:[
+      {t:300,set:{btn:'Liked',btnOn:true,val:'129',status:{t:'Saving in background…',k:'wait'},tUi:0,m:['0 ms','—','—']},packet:{lane:'main',label:'POST /like',tone:'req'}},
+      {t:1200,set:{srvNote:{t:'rejected · 403',k:'bad'},tSrv:600},packet:{lane:'main',dir:'back',label:'403',tone:'bad'}},
+      {t:2100,set:{btn:'Like',btnOn:false,val:'128',status:{t:'Restored from snapshot',k:'bad'},toast:'Could not like. Try again.',m:['0 ms','600 ms','yes']}}]},
+    {tag:'LIMIT',tone:'req',short:'A quick test',learn:3,title:'Not every action can bet',
+     body:['<p>Signing a contract, moving money or deleting data carries legal or financial weight. Showing “Signed” before the server agrees is a promise you may not keep.</p><p>Use a pending state instead: show “Signing…”, wait for confirmation, then show the result.</p>'],
+     idea:'If a rollback would be awkward or costly, show pending, not success.',
+     base:{title:'Contract #2041',btn:'Sign',val:'Unsigned',srvKey:'status',srvVal:'unsigned'},
+     frames:[
+      {t:300,set:{btnPend:true,status:{t:'Signing…',k:'wait'}},packet:{lane:'main',label:'POST /sign',tone:'req'}},
+      {t:1200,set:{srvVal:'signed',srvNote:{t:'signature stored',k:'ok'},tSrv:600},packet:{lane:'main',dir:'back',label:'200 OK',tone:'res'}},
+      {t:2100,set:{btnPend:false,btn:'Signed',btnOn:true,val:'Done',status:{t:'Confirmed by server',k:'ok'},tUi:600,m:['600 ms','600 ms','n/a']}}]},
+    {tag:'SUMMARY',tone:'mut',short:'',learn:3,title:'A quick test',
+     body:['<p>Go optimistic when the action almost always succeeds, undoing it is simple, the user expects instant feedback and the risk is low.</p><p>Take extra care when several people can edit the same record: a clean rollback can turn into a conflict.</p>'],
+     idea:'Optimistic UI is a consistency strategy, not only a speed trick.',
+     overlay:true,frames:[]}
+  ]
+};
+
+var L2={
+  id:'push-pull',n:2,title:'Push + Pull Sync',section:'State and updates',min:'5 min',level:'Intermediate',
+  sub:'Load with requests, stay fresh with events, and recover when the connection drops.',
+  metricLabels:['CLIENT VS SERVER','SOCKET','PENDING BADGE'],
+  scene:Scene2,
+  learn:['Pull gives a complete snapshot you can trust','Push says something changed, not what is true now','Each event needs a rule: refetch, toast, badge or ignore','A refetch on reconnect closes the gap left by missed events'],
+  steps:[
+    {tag:'PULL',tone:'res',short:'Something changes',learn:0,title:'Load with a request',
+     body:['<p>The first screen comes from ordinary requests. The response is the full picture at that moment, which makes it a safe starting point.</p>'],
+     idea:'Pull is complete and consistent, but only at the moment you ask.',
+     base:{ui:[null,null,null],badge:null,loaded:false},
+     frames:[
+      {t:300,set:{},packet:{lane:'pull',label:'GET /documents',tone:'req'}},
+      {t:1200,set:{},packet:{lane:'pull',dir:'back',label:'200 · 3 documents',tone:'res'}},
+      {t:2000,set:{ui:['pending','pending','signed'],badge:2,loaded:true}}]},
+    {tag:'PROBLEM',tone:'bad',short:'Push',learn:1,title:'Then something changes',
+     body:['<p>While you read the list, a colleague signs the NDA. The server knows. Your tab does not, because nobody asked.</p><p>Without another request, the screen keeps showing “pending” for as long as it stays open.</p>'],
+     idea:'A request and response client cannot hear about changes it did not ask for.',
+     frames:[{t:500,set:{srv:['pending','signed','signed']}}]},
+    {tag:'PUSH',tone:'ev',short:'Give events a rule',learn:1,title:'Let the server speak up',
+     body:['<p>Keep a WebSocket or Server-Sent Events stream open. When the NDA is signed, the server sends one small event that names what changed.</p>'],
+     idea:'Push says something changed. It does not have to carry the whole truth.',
+     code:'{ "type": "DOCUMENT_SIGNED",\n  "payload": { "id": "nda" } }',
+     base:{srv:['pending','signed','signed']},
+     frames:[
+      {t:300,set:{},packet:{lane:'push',label:'DOCUMENT_SIGNED',tone:'ev'}},
+      {t:1200,set:{event:'DOCUMENT_SIGNED'}}]},
+    {tag:'RULES',tone:'req',short:'Confirm with a request',learn:2,title:'Give every event a rule',
+     body:['<p>An event is a trigger, so decide what it does: refresh the affected query, show a toast, adjust the badge, or ignore it when the user is somewhere else.</p><p>Write the rule per event type, and check that handling the same event twice is harmless.</p>'],
+     idea:'Each event type gets its own small, explicit reaction.',
+     code:'socket.on("DOCUMENT_SIGNED", ({ id }) => {\n  invalidate(["document", id]);  // refetch the row\n  toast("NDA.pdf was signed");\n  badge.pending -= 1;\n});',
+     base:{srv:['pending','signed','signed'],event:'DOCUMENT_SIGNED'},
+     frames:[{t:400,set:{toast:'NDA.pdf was signed',badge:1,refetch:1}}]},
+    {tag:'PULL',tone:'res',short:'When the socket drops',learn:2,title:'Confirm with a request',
+     body:['<p>The event only triggers the refresh. The response from the server decides what the row finally shows.</p><p>That keeps the backend as the source of truth while the UI still reacts within moments.</p>'],
+     idea:'The event starts the refresh; the response settles it.',
+     base:{srv:['pending','signed','signed'],event:'DOCUMENT_SIGNED',toast:'NDA.pdf was signed',badge:1,refetch:1},
+     frames:[
+      {t:300,set:{},packet:{lane:'pull',label:'GET /documents/nda',tone:'req'}},
+      {t:1200,set:{},packet:{lane:'pull',dir:'back',label:'200 · nda: signed',tone:'res'}},
+      {t:2000,set:{ui:['pending','signed','signed'],refetch:-1,toast:''}}]},
+    {tag:'RECOVERY',tone:'req',short:'Which one does the job',learn:3,title:'When the socket drops',
+     body:['<p>Mobile networks sleep, laptops close and proxies time out. Any event sent while the socket is down is gone for good.</p><p>On reconnect, treat everything as possibly stale: refetch the live queries instead of trying to replay history.</p>'],
+     idea:'Events can be missed. A refetch on reconnect closes the gap.',
+     base:{ui:['pending','signed','signed'],srv:['pending','signed','signed'],badge:1},
+     frames:[
+      {t:300,set:{socket:'down'}},
+      {t:1000,set:{srv:['signed','signed','signed']},packet:{lane:'push',lost:true,label:'DOCUMENT_SIGNED',tone:'bad'}},
+      {t:2300,set:{socket:'open'}},
+      {t:2700,set:{},packet:{lane:'pull',label:'GET /documents',tone:'req'}},
+      {t:3600,set:{},packet:{lane:'pull',dir:'back',label:'200 · 3 documents',tone:'res'}},
+      {t:4400,set:{ui:['signed','signed','signed'],badge:0}}]},
+    {tag:'SUMMARY',tone:'mut',short:'',learn:3,title:'Which one does the job',
+     body:['<p>Use push for freshness and pull for correctness. Before shipping an event, ask whether it is idempotent, what happens if it arrives before the first load, and how missed ones are recovered.</p>'],
+     idea:'The backend stays the source of truth; the frontend stays responsive.',
+     base:{ui:['signed','signed','signed'],srv:['signed','signed','signed'],badge:0},
+     overlay:true,frames:[]}
+  ]
+};
+var LESSONS=[L1,L2];
+
+/* ---------- engine ---------- */
+var lesson,scene,step=0,S={},timers=[],anims=[],frames=[],t0=0,elapsed=0,paused=false,seen={};
+
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function draw(){
+  scene.draw(S);
+  var m=scene.metrics(S);
+  for(var i=0;i<3;i++){var b=el('mv'+i); b.textContent=m[i][0]; b.className=m[i][1];}
+}
+function fire(p){
+  var lane=scene.lanes[p.lane], g=el('pk-'+p.lane); if(!g||REDUCED) return;
+  g.querySelector('text').textContent=p.label||'';
+  g.style.setProperty('--c','var(--'+(p.tone||'req')+')');
+  var a=p.dir==='back'?lane.x2:lane.x1, b=p.dir==='back'?lane.x1:lane.x2;
+  var end=p.lost?a+(b-a)*0.5:b;
+  var tr=function(x){return 'translate('+x+'px,'+lane.y+'px)';};
+  var an=g.animate([
+    {transform:tr(a),opacity:0,offset:0},
+    {transform:tr(a+(end-a)*0.1),opacity:1,offset:0.1},
+    {transform:tr(end),opacity:1,offset:0.85},
+    {transform:tr(end),opacity:0,offset:1}],
+    {duration:900,fill:'forwards',easing:'ease-in-out'});
+  anims.push(an);
+}
+function runFrame(f){Object.assign(S,f.set||{}); draw(); if(f.packet) fire(f.packet);}
+function stop(){timers.forEach(clearTimeout);timers=[];anims.forEach(function(a){try{a.cancel();}catch(e){}});anims=[];}
+function schedule(){
+  t0=performance.now()-elapsed;
+  frames.forEach(function(f){
+    if(f._done) return;
+    timers.push(setTimeout(function(){f._done=true;runFrame(f);},Math.max(0,f.t-elapsed)));
+  });
+}
+function setPaused(p){
+  paused=p; txt('pause',p?'Resume':'Pause');
+  if(p){elapsed=performance.now()-t0;timers.forEach(clearTimeout);timers=[];anims.forEach(function(a){a.pause();});}
+  else{anims.forEach(function(a){a.play();});schedule();}
+}
+function play(){
+  stop(); var st=lesson.steps[step];
+  S=Object.assign(clone(scene.base()),clone(st.base||{}));
+  el('dev').classList.toggle('hide',!!st.overlay);
+  el('verdict').classList.toggle('hide',!st.overlay);
+  draw();
+  frames=(st.frames||[]).map(function(f){return Object.assign({_done:false},f);});
+  elapsed=0; paused=false; txt('pause','Pause');
+  if(REDUCED){frames.forEach(function(f){f._done=true;Object.assign(S,f.set||{});}); draw(); return;}
+  schedule();
+}
+
+function renderStep(){
+  var st=lesson.steps[step], n=lesson.steps.length;
+  txt('stepno','STEP '+(step+1)+' / '+n);
+  var pill=el('pill'); pill.textContent=st.tag; pill.setAttribute('data-tone',st.tone);
+  txt('stitle',st.title); el('sbody').innerHTML=st.body.join('');
+  txt('ideat',st.idea);
+  var code=el('code'); if(st.code){code.hidden=false;code.textContent=st.code;}else{code.hidden=true;}
+  el('back').disabled=(step===0);
+  var nx=el('next'), li=LESSONS.indexOf(lesson);
+  if(step<n-1) nx.textContent='Next: '+st.short+' →';
+  else if(li<LESSONS.length-1) nx.textContent='Next lesson: '+LESSONS[li+1].title+' →';
+  else nx.textContent='Restart lesson ↺';
+  txt('where','STEP '+(step+1)+' OF '+n);
+  var dots=el('dots').children;
+  for(var i=0;i<dots.length;i++){
+    var d=dots[i]; if(d.classList.contains('dot')){var k=+d.dataset.i; d.className='dot'+(k===step?' cur':(k<step?' done':''));}
+    else{var k2=+d.dataset.i; d.className='seg'+(k2<step?' done':'');}
+  }
+  seen[lesson.id]=seen[lesson.id]||{};
+  for(var j=0;j<=step;j++) seen[lesson.id][lesson.steps[j].learn]=true;
+  var lis=el('learn').children;
+  for(var q=0;q<lis.length;q++) lis[q].className=seen[lesson.id][q]?'on':'';
+  play();
+}
+function go(i){
+  var n=lesson.steps.length;
+  if(i<0) return;
+  if(i>=n){var li=LESSONS.indexOf(lesson); if(li<LESSONS.length-1){loadLesson(LESSONS[li+1].id,true);} else {step=0;renderStep();} return;}
+  step=i; renderStep();
+}
+
+function loadLesson(id,setHash){
+  var L=LESSONS.filter(function(x){return x.id===id;})[0]||LESSONS[0];
+  stop(); lesson=L; scene=L.scene; step=0;
+  if(setHash){try{if(location.hash!=='#'+L.id) location.hash=L.id;}catch(e){}}
+  txt('crumb','0'+L.n+'. '+L.section+' / Lesson '+L.n+' of '+LESSONS.length);
+  txt('ltitle',L.title);
+  el('chips').innerHTML='<span class="chip">'+L.min+'</span><span class="chip">'+L.level+'</span><span class="chip">'+L.steps.length+' steps</span>';
+  txt('lsub',L.sub);
+  el('metrics').innerHTML=L.metricLabels.map(function(l,i){return '<div class="metric"><small>'+l+'</small><b id="mv'+i+'">—</b></div>';}).join('');
+  var svg=el('scene'); svg.setAttribute('viewBox',scene.vb); svg.innerHTML=scene.build();
+  var d=''; L.steps.forEach(function(s,i){
+    if(i>0) d+='<span class="seg" data-i="'+(i-1)+'"></span>';
+    d+='<button class="dot" type="button" data-i="'+i+'" aria-label="Step '+(i+1)+': '+s.title+'">'+(i+1)+'</button>';
+  });
+  el('dots').innerHTML=d;
+  el('learn').innerHTML=L.learn.map(function(t){return '<li>'+t+'</li>';}).join('');
+  var tabs=el('tabs').children;
+  for(var i=0;i<tabs.length;i++) tabs[i].setAttribute('aria-current',tabs[i].dataset.id===L.id?'true':'false');
+  renderStep();
+}
+
+/* ---------- wiring ---------- */
+el('tabs').innerHTML=LESSONS.map(function(L){return '<button class="tab" type="button" data-id="'+L.id+'"><i>0'+L.n+'</i>'+L.title+'</button>';}).join('');
+el('tabs').addEventListener('click',function(e){var b=e.target.closest('.tab'); if(b) loadLesson(b.dataset.id,true);});
+el('dots').addEventListener('click',function(e){var b=e.target.closest('.dot'); if(b) go(+b.dataset.i);});
+el('back').addEventListener('click',function(){go(step-1);});
+el('next').addEventListener('click',function(){go(step+1);});
+el('replay').addEventListener('click',play);
+el('pause').addEventListener('click',function(){setPaused(!paused);});
+document.addEventListener('keydown',function(e){
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  var tag=(e.target&&e.target.tagName)||'';
+  if(e.key==='ArrowRight'){go(step+1);}
+  else if(e.key==='ArrowLeft'){go(step-1);}
+  else if((e.key==='r'||e.key==='R')){play();}
+  else if(e.key===' '&&tag!=='BUTTON'&&tag!=='A'){e.preventDefault();setPaused(!paused);}
+});
+el('theme').addEventListener('click',function(){
+  var r=document.documentElement, cur=r.getAttribute('data-theme');
+  if(!cur) cur=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+  var nxt=cur==='dark'?'light':'dark'; r.setAttribute('data-theme',nxt);
+  try{localStorage.setItem('pl-theme',nxt);}catch(e){}
+});
+try{var th=localStorage.getItem('pl-theme'); if(th) document.documentElement.setAttribute('data-theme',th);}catch(e){}
+window.addEventListener('hashchange',function(){var id=(location.hash||'').slice(1); if(id&&id!==lesson.id&&LESSONS.some(function(x){return x.id===id;})) loadLesson(id,false);});
+
+loadLesson((location.hash||'').slice(1)||LESSONS[0].id,false);
+})();
+</script>
+</body>
+</html>
