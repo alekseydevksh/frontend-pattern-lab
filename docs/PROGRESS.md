@@ -16,7 +16,7 @@ check, tests and build pass. Never tick on a guess.
 ### M0 acceptance criteria
 
 - [x] `pnpm build` produces a static export
-- [ ] CI is green on the empty app
+- [x] CI is green on the empty app (run 45723540889 on main)
 - [ ] The deploy URL loads
 
 ## Lessons
