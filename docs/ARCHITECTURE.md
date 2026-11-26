@@ -11,10 +11,10 @@ so a new lesson never touches the engine.
 
 | Folder                    | Holds                                                                 | Exists                                   |
 | ------------------------- | --------------------------------------------------------------------- | ---------------------------------------- |
-| `content/lessons/`        | Typed lesson data, the lesson loaders, and the catalog of all 12      | M2 (registry), M3 (lessons), M4, M5 prep |
+| `content/lessons/`        | Typed lesson data and the catalog of all 12                           | M2 (registry), M3 (lessons), M4, M5 prep |
 | `content/dev/`            | The dummy lesson for the player test page. Not in the registry        | M2                                       |
 | `src/engine/`             | Types, `useLessonPlayer`, timeline, packet helpers, validator         | M2                                       |
-| `src/components/scenes/`  | One pure SVG scene per lesson, and the registry that loads them       | M2 (registry), M3 (scenes), M5 prep      |
+| `src/components/scenes/`  | One pure SVG scene per lesson, and the registry the tests read        | M2 (registry), M3 (scenes), M5 prep      |
 | `src/components/ui/`      | Button, Pill, Chip, Card, and so on                                   | M1                                       |
 | `src/components/lesson/`  | Player parts, the lesson shell and the cards, tables and lists in it  | M2 (player parts), M3                    |
 | `src/components/shell/`   | Site header, footer and the shell that wraps pages and the 404        | M4                                       |
@@ -159,7 +159,7 @@ A scene is a `SceneDefinition<S>`: a `viewBox`, the `lanes` its packets can use,
 ## Content validation
 
 `validateLessons(lessons, scenes)` returns one message per problem. The test in
-`content/lessons/lessons.test.ts` runs it over every lesson in the registry, so a mistake in lesson
+`content/lessons/lessons.test.ts` runs it over every lesson page's lesson, with the scene that page draws, so a mistake in lesson
 data fails `pnpm test` and the build. It also fails if fewer than two lessons are registered. It checks the six rules of the spec (repeated step ids, a
 `takeawayIndex` out of range, frames not sorted by `at`, a `sceneId` missing from the scene
 registry, a packet on a lane the scene does not define, an empty `sceneAlt`) and a few more
@@ -168,7 +168,7 @@ registry, a packet on a lane the scene does not define, an empty `sceneAlt`) and
 ## Player test page
 
 `/dev/player/` plays `content/dev/dummy-lesson.ts` with `components/scenes/dev/DummyScene.tsx`
-through `LessonShell`, the same shell the real lessons use. Neither file is in a registry, so they never reach the
+through `LessonShell`, the same shell the real lessons use. Neither has a lesson page, so they never reach the
 catalog. `e2e/player.spec.ts` drives the page with the keyboard against a frozen clock, checks
 reduced motion, and runs axe in both themes. Like the component gallery, the page is `noindex`
 and part of the static export (D11).
@@ -205,10 +205,10 @@ type and nothing else from the scene. The state holds everything the scene says:
 (`labels`, with `{name}` templates filled by `format`), the names in the diagram, and the fields the
 frames patch. The scene's `metrics` are fields of the state (lesson 1) or computed from it (lesson 2).
 
-**The page.** `src/app/(site)/lessons/[slug]/page.tsx` (server) loads the lesson with `loadLesson(slug)`,
-renders `LessonHeader` (breadcrumb, title, chips, summary) and passes both to `LessonRoute` (client). That
-picks the lesson's scene view from the scene registry (see "Loading", below) and renders it. The view is
-`LessonShell` with the scene already in it. The shell runs `useLessonPlayer` and lays out the two columns of
+**The page.** Each lesson has a page file, `src/app/(site)/lessons/<slug>/page.tsx` (server), that imports
+the lesson's data and its scene and passes them to `lessonPage` (`lessons/lessonPage.tsx`, see "Loading",
+below). That renders `LessonHeader` (breadcrumb, title, chips, summary) and passes it, the lesson and the
+scene to `LessonRoute` (client), which renders `LessonShell` with them. The shell runs `useLessonPlayer` and lays out the two columns of
 the prototype: the stage card (header, metrics with the "Simulated" pill, diagram, step counter with Replay
 and Pause, `Stepper`) and, beside it, the `StepCard` (with `StepControls` under its live region) and the
 `Takeaways` card. On a step with a `summary`, a `VerdictTable` takes the place of the diagram.
@@ -223,7 +223,7 @@ metrics and verdict tables. `e2e/lessons.spec.ts` plays both lessons with the ke
 src/app/layout.tsx              <html>, fonts, theme script, metadataBase (the production URL)
 src/app/(site)/layout.tsx       SiteShell: skip link, header, content, footer
 src/app/(site)/page.tsx         the catalog, from content/lessons/catalog.ts
-src/app/(site)/lessons/[slug]/  the lesson page; LessonRoute adds the router
+src/app/(site)/lessons/<slug>/  one page per lesson; lessonPage.tsx and LessonRoute.tsx beside them
 src/app/not-found.tsx           the 404 page, wrapped in SiteShell itself
 src/app/dev/                    test pages with their own bare frames, outside the shell
 src/app/sitemap.ts, robots.ts   written once at build time
@@ -235,15 +235,14 @@ page sits outside every layout (Next.js renders it under the root layout only), 
 in `SiteShell`. Each page renders its own `<main id="main">`, which the skip link targets.
 
 **Static generation.** `pnpm build` prints every route as static: `/`, `/_not-found`, the two `/dev/`
-pages, `/lessons/[slug]` with one entry per ready lesson (`generateStaticParams`, with
-`dynamicParams = false`), `/robots.txt` and `/sitemap.xml`. Nothing reads the query string on the
+pages, one `/lessons/<slug>` per ready lesson (one folder each, D16), `/robots.txt` and `/sitemap.xml`. Nothing reads the query string on the
 server, so one page per lesson serves every `?step=`.
 
 **The catalog.** `content/lessons/catalog.ts` has one entry per lesson of the spec table, in
 order (the position is the lesson number). `status: 'ready'` means a `Lesson` with the same slug has a
-loader in `content/lessons/index.ts` and the entry also holds its `minutes` and `stepCount`; `status:
+page in `src/app/(site)/lessons/<slug>/` and the entry also holds its `minutes` and `stepCount`; `status:
 'soon'` means there is none, and the card says so and has no link. `catalog.test.ts` holds the entries, the
-loaders, the lessons and the spec table together. The page is a server component that shows one list in
+lesson pages, the lessons and the spec table together. The page is a server component that shows one list in
 lesson order, numbered 1 to 12, with the track as a label on each card (D14); its only client part is
 `ProgressNote` on each ready card. It reads the entries only: no lesson data and no scene.
 
@@ -285,27 +284,30 @@ build (see "The JavaScript budget" below).
 Decided in D14. Three things changed before lesson 3, so that adding lessons does not make every page
 heavier or move.
 
-**Loading.** A page loads what it shows and nothing else.
+**Loading.** A page loads what it shows and nothing else. Decided in D14, and changed in D16 so that the
+lessons no longer share one route.
 
 ```text
-catalog page (server)     catalog.ts entries only (title, summary, track, minutes, stepCount)
-lesson page (server)      catalog.ts (header, next lesson) + loadLesson(slug)   -> one lesson's data
-LessonRoute (client)      sceneEntry(lesson.sceneId).View                       -> one scene's chunk
+catalog page (server)          catalog.ts entries only (title, summary, track, minutes, stepCount)
+lessons/<slug>/page.tsx        imports one lesson's data and one scene  -> lessonPage(lesson, scene)
+LessonRoute (client)           LessonShell with that lesson and scene
 ```
 
-- `content/lessons/index.ts` maps a slug to a loader (`() => import('./optimistic-ui')`). `loadLesson`
-  reads one file; `loadAllLessons` is for tests.
-- `src/components/scenes/registry.ts` maps a `sceneId` to `{ load, View }`. `View` is `next/dynamic` over
-  the scene file, wrapped by `bindScene` into the lesson shell with that scene in it. Next.js turns each
-  literal `import()` into its own chunk, preloads the chunk in the HTML of the pages that render it, and
-  draws the scene in the server HTML, so the first paint is complete. `load` is the same import without
-  `next/dynamic`, for the validation tests. `next/dynamic` only splits an `import()` it can see written
-  out in its own call, so the file is named twice in each entry; `registry.test.tsx` checks the two
-  agree.
+- Each lesson has a route folder of its own. Next.js bundles each route's client code on its own, so a lesson
+  page's JavaScript holds its own scene and nothing that names another. There is no map of scenes in the
+  browser and no `next/dynamic`. The scene is drawn in the server HTML, so the first paint is complete.
+- A scene file starts with `'use client'`. On the server the scene is a client reference, which the page
+  hands to `LessonRoute` as a prop. `lessonPage<S>` takes a `Lesson<S>` and a `SceneDefinition<S>`, so the
+  pair must agree on the state type. It throws, and fails the build, for a lesson whose catalog entry is
+  not ready.
+- `src/components/scenes/registry.ts` is for tests and tools only. It reads every page file with Vite's
+  `import.meta.glob` and gives `lessonPages`, `lessons` and `sceneRegistry` (scenes by `sceneId`), so
+  nothing is registered by hand. The app never imports it.
 - `LessonShell` takes the scene as a prop and does not import the registry.
-- Passing the scene from the server page as a client reference was tried first and does not split: Next.js
-  chunks client modules per route, and both lessons share `/lessons/[slug]`, so both scenes landed in one
-  chunk.
+- Two ways that keep a single `/lessons/[slug]` route were tried and do not split, because Turbopack puts
+  every client module reachable from one route into that route's shared chunks: passing the scene from the
+  server page as a client reference (D14), and `next/dynamic` called on the server over one client view per
+  scene (D16). `next/dynamic` in client code does split, but its map of loaders reaches every lesson page.
 
 **The step card does not change height.** The card must be as tall as the tallest step at every width,
 because the text of a step changes length and wraps differently on a phone. `StepCard` draws every step's
@@ -324,4 +326,8 @@ catalog is `index.html` and every `lessons/<slug>/index.html` is a lesson page, 
 without editing the script. It gzips the scripts each page loads (blocking, async and preloaded; not
 Next.js's `nomodule` polyfill, which no current browser fetches). It fails a lesson page over 150 KB, and a
 lesson page that has no JavaScript file of its own while there are two or more (the scenes would be bundled
-together again). `scripts/js-budget.test.ts` runs it against fake exports in `pnpm test`.
+together again). It also checks the scenes (D16): it reads which scene each lesson page renders from the
+build's client reference manifests in `.next`, then looks for every scene's module in the JavaScript each
+page loads. It fails a lesson page that carries another lesson's scene, or names a file that holds one (as a
+map of loaders does), or does not carry its own, and a catalog that carries or names any scene.
+`scripts/js-budget.test.ts` runs it against fake exports in `pnpm test`.
