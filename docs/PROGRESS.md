@@ -8,7 +8,7 @@ check, tests and build pass. Never tick on a guess.
 - [x] M0 Bootstrap
 - [x] M1 Tokens, base UI and Storybook
 - [x] M2 Lesson engine
-- [ ] M3 Port lessons 1 and 2
+- [x] M3 Port lessons 1 and 2
 - [ ] M4 App shell
 - [ ] M5 New lessons 3 to 12
 - [ ] M6 Polish and launch
@@ -36,10 +36,23 @@ check, tests and build pass. Never tick on a guess.
 - [x] The dummy lesson plays on the test page `/dev/player/` (e2e: first to last step with the
       keyboard alone, pause and resume, replay, reduced motion, axe in both themes)
 
+### M3 acceptance criteria
+
+- [x] Both lessons match `reference/prototype.html` in text, step order and animation behaviour
+      (`content/lessons/prototype-parity.test.ts` loads the prototype and compares text, tags,
+      step order, frame times, packets, the scene state after every frame, metrics and verdict
+      tables)
+- [x] Both lessons match the prototype's keyboard controls (arrows, `R`, Space; e2e). One
+      difference, agreed in the M2 answers: the arrow past the last step waits for M4
+- [x] The end-to-end test plays both lessons from the first step to the last with the keyboard,
+      checks the metrics and the verdict tables, and runs axe in both themes on every step
+- [x] Reduced motion and keyboard-only use checked (e2e, both lessons)
+- [ ] The owner checks the look against the prototype (screenshots: see the pull request)
+
 ## Lessons
 
-- [ ] 1. Optimistic UI
-- [ ] 2. Push + Pull Sync
+- [x] 1. Optimistic UI
+- [x] 2. Push + Pull Sync
 - [ ] 3. Virtualization
 - [ ] 4. Normalized Data
 - [ ] 5. Rendering Isolation
