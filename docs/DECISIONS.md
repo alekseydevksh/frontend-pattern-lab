@@ -24,8 +24,8 @@ Runtime: Node 24.22.2 (`.nvmrc`), pnpm 12.21.0 (`packageManager` field).
 | `@testing-library/react`, `@testing-library/dom`  | 16.3.3, 10.4.2         | Tests assert on roles and visible text; the DOM package is a peer of the React one.               |
 | `@playwright/test`                                | 1.65.1                 | End-to-end tests of whole lessons in a real browser.                                              |
 
-Added in M1: see D8. Not yet installed, planned by the spec: Radix Primitives (when a component
-needs Tabs, Tooltip, Dialog or Switch), Lighthouse CI and the `lighthouse` script (M4).
+Added in M1: see D8, and in M4: see D13. Not yet installed, planned by the spec: Radix Primitives
+(when a component needs Tabs, Tooltip, Dialog or Switch).
 
 ## D2. TypeScript pinned to 6.x (2026-11-26)
 
@@ -299,3 +299,120 @@ Choices the spec did not settle:
   motion to reach it at once, plus once with a packet in flight.
 - **Numbers in diagrams** are labelled simulated by the footer line ("Latencies in the diagrams are
   simulated.") and by step 1's text, as in the prototype. Open question for the owner: also in the diagram.
+
+## D13. App shell, and the owner's answers to the M3 questions (2026-11-26)
+
+**Dependency added in M4**
+
+| Package     | Version | Reason                                                                                                                                                                                      |
+| ----------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@lhci/cli` | 0.16.1  | Lighthouse CI, which the spec asks for: it runs Lighthouse (13.6.0, bundled) several times per page and asserts the budget, which neither Playwright nor a few lines of script can replace. |
+
+It is a dev dependency: it runs only on a machine or in CI and ships nothing. Alternatives: the bare
+`lighthouse` package with my own assertions and median logic (more code to maintain), or measuring
+with Playwright (no real Lighthouse score). It adds about 240 packages to the lockfile.
+
+**Owner answers, recorded**
+
+1. A "Simulated" pill (text in `messages/en.json`) sits next to the metrics row, outside the diagram.
+   It is shown on every lesson. The footer line and step 1's text stay.
+2. On a lesson with a next lesson, the last step's button reads "Next lesson: <title> →" and the right
+   arrow goes there through `onPastEnd`. With none, the button stays "Restart lesson". Today only lesson
+   1 has a next lesson, because "next" means the next _playable_ lesson: lesson 2 keeps "Restart lesson"
+   until lesson 3 ships.
+3. The breadcrumb says "Lesson N of 12", counting the catalog.
+4. The prototype differences 6 to 10, 13 and 15 to 20 are accepted. Item 14 (time markers) is fixed to
+   match: a marker that goes away fades out where it stands and keeps its text, with the prototype's
+   easing (`ease`) and fade (0.3 s), and starts from x = 0. **One caveat:** to fade "where it stands" the
+   marker remembers its last position and text (`useState` in `OptimisticUiScene`), because a pure
+   function of the state cannot know where a hidden marker used to be. What it remembers is invisible
+   (opacity 0), so the picture still depends only on the state, and a test checks it. If you want scenes
+   to hold no state at all, the alternative is the M3 behaviour (slide to the edge, empty label).
+
+**Data and engine**
+
+- `CatalogEntry` is in `src/engine/types.ts` next to `Lesson`. `Lesson.status` and the coming-soon rules
+  in `validate.ts` are removed, as D12 said (the only engine change besides `onPastEnd`, and it is a
+  type and a validation rule, not playback).
+- Slugs for the ten coming-soon lessons are chosen here, since the M5 branches and URLs depend on them:
+  `virtualization`, `normalized-data`, `rendering-isolation`, `state-ownership`, `requirements-first`,
+  `container-view-viewmodel`, `backend-for-frontend`, `progressive-rendering`, `permission-aware-ui`,
+  `errors-and-observability`. Their summaries are new, in original words.
+- The catalog repeats a ready lesson's title, summary and track instead of importing them, so the
+  catalog stays a plain list; `catalog.test.ts` fails if the two differ.
+
+**Routes and shell**
+
+- **Route group `(site)`** holds the catalog and lessons with the shell; `/dev/` stays outside with its
+  own bare frames. The 404 page wraps itself in the shell (Next.js renders it under the root layout only).
+- **Header:** brand (a link home), "All lessons", "Source code" (the repository), theme toggle, and a
+  skip link. **Footer:** the spec's credit wording with both links live, "Latencies in the diagrams are
+  simulated.", and the licences (MIT, CC BY 4.0, the fonts' SIL OFL 1.1). Brand and link text are in
+  `messages/en.json`.
+- **Catalog layout:** cards grouped by the four tracks, in a fixed track order, lessons in lesson
+  order inside each. So the numbers on the cards are not consecutive on screen (01, 02, 04, 06, 09 in
+  "Data and state"). Grouping by track is what the spec asks for; say if you would rather show one list
+  in lesson order.
+- **A ready card** is one link (its title, stretched over the card, with a 2 px ring on the card when it
+  has keyboard focus). **A coming-soon card** has no link, a dashed border and the words "Coming soon".
+
+**`?step=N`**
+
+- Counts from 1. Read **after hydration** in an effect, because a static export cannot see the query when
+  it builds; the server HTML is always step 1 and a deep link jumps a moment after first paint. Measured
+  layout shift of that jump: 0.003 (desktop) and 0.001 (phone), well under the 0.1 "good" line.
+- A whole number outside the lesson is clamped. A value that is **not** a whole number (`abc`, `2.5`, an
+  empty value, `1e2`) is ignored, as if absent: there is no sensible step to clamp it to.
+- The address is rewritten with `history.replaceState` as the learner moves, keeping other parameters and
+  the hash. **Step 1 has no parameter**, so the plain lesson address stays the clean, canonical one. The
+  canonical URL never carries a query string.
+- A lesson opened without `?step=` starts at step 1. It does **not** resume where the learner left off;
+  saved progress fills in the takeaways and the catalog, and a link can carry a step. Say if you want
+  resume.
+
+**Saved progress**
+
+- One key, `pl-progress`, versioned (`v: 1`): per lesson the furthest step reached, the ticked takeaways
+  and `completed`. Reaching the last step completes the lesson, and it stays completed. Progress only
+  moves forward. Unknown versions and malformed entries are dropped on read (never thrown), so a future
+  format change is a version bump.
+- Applied after hydration through `useSyncExternalStore` with a "nothing saved" server snapshot. The
+  catalog card reserves the height of its progress line, so progress arriving does not move the card
+  (an e2e test measures it). Opening a lesson counts as starting it: the card then says "Step 1 of N".
+- The ticked takeaways are the union of the saved ones and those of the furthest step reached this visit,
+  so they still show when storage is blocked.
+
+**Metadata and crawler files**
+
+- Title format `<page> · Frontend Pattern Lab`, bare site name on the catalog. Canonical paths end in a
+  slash (how the export serves them). Open Graph: `type`, `siteName`, `locale`, `title`, `description`,
+  `url`. **No `og:image` yet:** the spec puts social preview images in M6.
+- `sitemap.xml` (catalog and the two ready lessons, no `lastmod`, since there is no trustworthy date) and
+  `robots.txt` are generated at build time with `dynamic = 'force-static'`; the export supports both.
+  **`/dev/` is `noindex` and left out of the sitemap, but not blocked in `robots.txt`:** a page crawlers may
+  not fetch can never show them its `noindex`, so blocking could keep it listed by address. The 404 page
+  gets Next.js's own `noindex`.
+
+**Performance**
+
+- **Measured on the static export**, served by `scripts/serve-out.mjs`, which now gzips text files (once,
+  at start-up), as a host does; without it the numbers would count bytes no visitor downloads.
+- **Lighthouse:** the mobile profile (a 412 px screen, 4x CPU slowdown, simulated slow 4G), **five runs per
+  page, the median of each metric asserted** (`aggregationMethod: 'median'`). The first run of a batch was an
+  outlier in two of two trials (total blocking time 309 and 1323 ms against 31 to 81 ms for the rest), which
+  failed an assertion on one run; I have not found the cause (cold browser or machine), so the median over
+  five runs is what keeps one cold run from failing the build. Treat it as a risk to watch in CI.
+- **JavaScript budget:** `scripts/js-budget.mjs` gzips (level 9) every script a browser fetches for a page,
+  ignoring the `nomodule` polyfill (38.7 KB gzipped, which no current browser fetches). The framework alone
+  is 139 KB gzipped, so "the catalog ships almost no JavaScript" is true of our code (the catalog's own chunk is
+  about 1.5 KB) but not of the page: the App Router's React and client runtime cannot be avoided.
+- **CLS while playing:** `e2e/layout-shift.spec.ts` plays every step of both lessons, on desktop and phone,
+  and requires the standard CLS to be exactly 0. Changing a step does reflow the page a little (the step
+  card's height changes and the takeaways card moves: 0.06 to 0.08 on desktop, 0.001 to 0.002 on phone). The
+  CLS metric ignores shifts within 500 ms of a key press or click, so it does not count; the spec's
+  "no layout shift while a lesson plays" is met by that definition. It would not be by a stricter reading.
+  Reserving the step card's height would remove it.
+- **A favicon** (`src/app/icon.svg`, the header's two-dot mark, light and dark variants through a media
+  query) was added because the missing `/favicon.ico` was a 404 and a console error on every page load,
+  which cost best practices 4 points (96 to 100). Hard-coded hex values are in the SVG because a favicon
+  cannot read the page's CSS variables; they are the token values. Social preview images are still M6.

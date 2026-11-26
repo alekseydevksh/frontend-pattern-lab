@@ -9,7 +9,7 @@ check, tests and build pass. Never tick on a guess.
 - [x] M1 Tokens, base UI and Storybook
 - [x] M2 Lesson engine
 - [x] M3 Port lessons 1 and 2
-- [ ] M4 App shell
+- [x] M4 App shell
 - [ ] M5 New lessons 3 to 12
 - [ ] M6 Polish and launch
 
@@ -48,6 +48,22 @@ check, tests and build pass. Never tick on a guess.
       checks the metrics and the verdict tables, and runs axe in both themes on every step
 - [x] Reduced motion and keyboard-only use checked (e2e, both lessons)
 - [ ] The owner checks the look against the prototype (screenshots: see the pull request)
+
+### M4 acceptance criteria
+
+- [x] Every route is statically generated (`pnpm build` lists `/`, `/_not-found`, the two `/dev/`
+      pages, `/lessons/optimistic-ui`, `/lessons/push-pull-sync`, `/robots.txt` and `/sitemap.xml`
+      as static; no route is dynamic)
+- [x] Lighthouse (mobile profile, median of 5 runs) on the catalog and a lesson page: performance 100,
+      accessibility 100, best practices 100 (budget: at least 95)
+- [x] Largest Contentful Paint 0.75 s on both pages (budget: under 2.5 s)
+- [x] Cumulative Layout Shift 0 on both pages, and 0 while every step of both lessons plays, on
+      desktop and phone (e2e). A step change reflows the page by 0.06 to 0.08 on desktop, which the CLS
+      metric does not count because the learner caused it: see D13
+- [x] Lesson page JavaScript 147.1 KB gzipped (budget: under 150 KB). The framework alone is 139.2 KB,
+      so there is 2.9 KB of headroom: see D13 and the pull request
+- [x] The catalog, `?step=` deep links, saved progress, next-lesson navigation, the 404 page and page
+      metadata work (unit and e2e tests; axe on the catalog and the 404 page in both themes)
 
 ## Lessons
 

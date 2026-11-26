@@ -3,7 +3,11 @@
 1. Create `content/lessons/<slug>.ts` exporting a `Lesson` object.
 2. Create `src/components/scenes/<Name>Scene.tsx` that follows the scene contract, and
    register it in `src/components/scenes/registry.ts`.
-3. Add the lesson to `content/lessons/index.ts` at its position.
+3. Add the lesson to `content/lessons/index.ts` at its position, and change its entry in
+   `content/lessons/catalog.ts` from `status: 'soon'` to `status: 'ready'`. The slug, title,
+   summary and track in the catalog must equal the lesson's (a test checks it). Nothing else
+   changes: the catalog card, the route, the sitemap entry, the "Lesson N of 12" breadcrumb and the
+   previous lesson's "Next lesson" button all follow from the registry and the catalog.
 4. Run the lesson-data validation test (`pnpm test`) and the end-to-end smoke test. The
    validation test fails with a message that names the lesson, the step and the rule: a repeated
    step id, a `takeawayIndex` out of range, frames not sorted by `at`, a `sceneId` missing from the
@@ -75,6 +79,6 @@ The last step of a lesson can carry a `summary` (a title and rows of label, verd
 shell then shows a verdict table in place of the diagram, and the step has no frames.
 
 **The registry** (`content/lessons/index.ts`) gets `import { pushPullSync } from './push-pull-sync'` and
-the entry. The page `/lessons/push-pull-sync/` then exists, with no change to the engine, the shell or
-the routes. Run `pnpm test`: the validation test, and `prototype-parity.test.ts` for the two ported
+the entry, and `catalog.ts` has its entry set to `ready`. The page `/lessons/push-pull-sync/` then
+exists, with no change to the engine, the shell or the routes. Run `pnpm test`: the validation test, and `prototype-parity.test.ts` for the two ported
 lessons, must pass.

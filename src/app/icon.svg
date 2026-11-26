@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .frame { fill: #fafbfd; stroke: #16213a; }
+    .req { fill: #e0562b; }
+    .res { fill: #0d8587; }
+    @media (prefers-color-scheme: dark) {
+      .frame { fill: #121d36; stroke: #e7ecf8; }
+      .req { fill: #ff7d52; }
+      .res { fill: #38c3c5; }
+    }
+  </style>
+  <rect class="frame" x="2" y="2" width="28" height="28" rx="8" stroke-width="2.5" />
+  <circle class="req" cx="10" cy="10" r="3.5" />
+  <circle class="res" cx="22" cy="22" r="3.5" />
+</svg>
