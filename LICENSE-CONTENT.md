@@ -4,6 +4,8 @@ The original lesson text and diagrams of Frontend Pattern Lab are licensed under
 [Creative Commons Attribution 4.0 International licence](https://creativecommons.org/licenses/by/4.0/)
 (CC BY 4.0). The source code is licensed separately under the MIT licence, see [LICENSE](LICENSE).
 
+Copyright (c) 2026 Aliaksei Dzeuksh.
+
 ## What this covers
 
 - Lesson text in `content/` (titles, summaries, step text, takeaways, verdict tables).
