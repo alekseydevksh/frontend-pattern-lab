@@ -16,6 +16,7 @@
     "test:e2e": "playwright test",
     "budget": "node scripts/js-budget.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
+    "screenshots": "node scripts/lesson-screenshots.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
