@@ -57,7 +57,6 @@ const toast = 'Could not like. Try again.';
 export const optimisticUi: Lesson<OptimisticUiState> = {
   slug: 'optimistic-ui',
   order: 1,
-  status: 'published',
   track: 'Data and state',
   title: 'Optimistic UI',
   summary:

@@ -145,29 +145,9 @@ describe('validateLesson: further rules', () => {
     }
   });
 
-  it('fails on a published lesson without steps or takeaways', () => {
+  it('fails on a lesson without steps or takeaways', () => {
     expect(problemsOf(broken((l) => (l.steps = []))).join('\n')).toMatch(/needs steps/);
     expect(problemsOf(broken((l) => (l.takeaways = []))).join('\n')).toMatch(/no takeaways/);
-  });
-});
-
-describe('validateLesson: coming-soon stubs', () => {
-  const stub = (edit: (l: Lesson<TestState>) => void = () => {}) =>
-    broken((l) => {
-      l.status = 'coming-soon';
-      l.steps = [];
-      l.takeaways = [];
-      l.sceneId = 'not-built-yet';
-      edit(l);
-    });
-
-  it('needs no steps, takeaways or scene', () => {
-    expect(problemsOf(stub())).toEqual([]);
-  });
-
-  it('must not have steps', () => {
-    const lesson = stub((l) => (l.steps = createTestLesson().steps));
-    expect(problemsOf(lesson)).toEqual([expect.stringMatching(/must have no steps/)]);
   });
 });
 

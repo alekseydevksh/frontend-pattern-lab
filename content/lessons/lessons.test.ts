@@ -30,8 +30,8 @@ describe('content/lessons', () => {
     },
   );
 
-  it('has a scene in the registry for every published lesson', () => {
-    for (const lesson of lessons.filter((l) => l.status === 'published')) {
+  it('has a scene in the registry for every lesson', () => {
+    for (const lesson of lessons) {
       expect(Object.keys(scenes), lesson.slug).toContain(lesson.sceneId);
     }
   });

@@ -24,7 +24,6 @@ export function createTestLesson(): Lesson<TestState> {
   return {
     slug: 'test-lesson',
     order: 1,
-    status: 'published',
     track: 'Structure',
     title: 'Test lesson',
     summary: 'A lesson for engine tests.',
