@@ -61,15 +61,18 @@
 }
 
 /*
- * Signal colours as text. The raw signal colours are for borders, fills and large marks.
+ * Signal colours as text (and muted text on a tint). The raw signal colours are for borders, fills and large marks.
  * Used as small text on paper, panel or a tint of them, the light theme values fall below
  * the 4.5:1 contrast of WCAG AA (for example --req on --panel is 3.7:1). Mixing 30% of
  * --ink into the signal colour gives 5:1 or more on every surface in both themes.
+ * --muted on a 12% tint of itself, as in the neutral pill, is 4.3:1 in the light theme, so
+ * it gets the same treatment.
  * These must be declared for the root and for every [data-theme] scope, so that they are
  * computed from that scope's own --req and --ink.
  */
 :root,
 [data-theme] {
+  --muted-text: color-mix(in srgb, var(--muted) 70%, var(--ink));
   --req-text: color-mix(in srgb, var(--req) 70%, var(--ink));
   --res-text: color-mix(in srgb, var(--res) 70%, var(--ink));
   --ev-text: color-mix(in srgb, var(--ev) 70%, var(--ink));
@@ -95,6 +98,7 @@
   --color-res: var(--res);
   --color-ev: var(--ev);
   --color-bad: var(--bad);
+  --color-muted-text: var(--muted-text);
   --color-req-text: var(--req-text);
   --color-res-text: var(--res-text);
   --color-ev-text: var(--ev-text);

@@ -45,12 +45,12 @@ describe('tokens.css', () => {
   });
 
   it('derives the text variants of the signal colours inside every theme scope', () => {
-    for (const tone of ['req', 'res', 'ev', 'bad']) {
+    for (const tone of ['muted', 'req', 'res', 'ev', 'bad']) {
       expect(tokens).toMatch(new RegExp(`--${tone}-text: color-mix\\(in srgb, var\\(--${tone}\\)`));
     }
     // They must sit in a rule that matches [data-theme] scopes, or a themed wrapper
     // would inherit text colours computed from the page's theme.
-    expect(tokens).toMatch(/:root,\s*\[data-theme\] \{\s*--req-text/);
+    expect(tokens).toMatch(/:root,\s*\[data-theme\] \{\s*--muted-text/);
   });
 
   it('exposes the colours to Tailwind', () => {
