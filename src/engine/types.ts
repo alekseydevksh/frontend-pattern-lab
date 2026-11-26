@@ -16,8 +16,6 @@ export type Level = 'Beginner' | 'Intermediate' | 'Advanced';
 export interface Lesson<S> {
   slug: string;
   order: number;
-  /** A coming-soon lesson is only a catalog entry: it has no steps and no scene yet. */
-  status: 'published' | 'coming-soon';
   track: Track;
   title: string;
   summary: string;
@@ -33,6 +31,20 @@ export interface Lesson<S> {
   /** The scene state every step starts from. */
   baseState: S;
   steps: Step<S>[];
+}
+
+/**
+ * A row of the catalog. `Lesson` is only for lessons that can be played; a lesson that is not
+ * ready has a catalog entry and no `Lesson`, so the catalog never needs fake steps. Entries are
+ * listed in lesson order, so the position in the list is the lesson number. A `ready` entry
+ * must have a playable lesson with the same slug (content/lessons/catalog.test.ts checks it).
+ */
+export interface CatalogEntry {
+  slug: string;
+  title: string;
+  summary: string;
+  track: Track;
+  status: 'ready' | 'soon';
 }
 
 export interface Step<S> {

@@ -37,14 +37,7 @@ export function validateLesson(
   }
   if (isBlank(lesson.title)) problems.push(`${where}: the title is empty.`);
 
-  // A coming-soon lesson is a catalog entry only: it has no steps and no scene to check.
-  if (lesson.status === 'coming-soon') {
-    if (lesson.steps.length > 0)
-      problems.push(`${where}: a coming-soon lesson must have no steps.`);
-    return problems;
-  }
-
-  if (lesson.steps.length === 0) problems.push(`${where}: a published lesson needs steps.`);
+  if (lesson.steps.length === 0) problems.push(`${where}: a lesson needs steps.`);
   if (lesson.takeaways.length === 0) problems.push(`${where}: it has no takeaways.`);
   lesson.takeaways.forEach((takeaway, i) => {
     if (isBlank(takeaway)) problems.push(`${where}: takeaway ${i} is empty.`);

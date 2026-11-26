@@ -15,7 +15,7 @@ import { LessonsFrame } from '../LessonsFrame';
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return lessons.filter((lesson) => lesson.status === 'published').map(({ slug }) => ({ slug }));
+  return lessons.map(({ slug }) => ({ slug }));
 }
 
 type Props = { params: Promise<{ slug: string }> };

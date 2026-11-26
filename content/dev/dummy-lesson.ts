@@ -22,7 +22,6 @@ const base: DummyState = {
 export const dummyLesson: Lesson<DummyState> = {
   slug: 'player-test',
   order: 1,
-  status: 'published',
   track: 'Structure',
   title: 'Player test lesson',
   summary: 'A dummy lesson that exercises the lesson player from start to finish.',

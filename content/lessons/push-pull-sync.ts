@@ -48,7 +48,6 @@ const ndaSigned: PushPullState['srv'] = ['pending', 'signed', 'signed'];
 export const pushPullSync: Lesson<PushPullState> = {
   slug: 'push-pull-sync',
   order: 2,
-  status: 'published',
   track: 'Data and state',
   title: 'Push + Pull Sync',
   summary: 'Load with requests, stay fresh with events, and recover when the connection drops.',
