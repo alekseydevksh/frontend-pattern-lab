@@ -10,7 +10,7 @@ export interface PillProps extends HTMLAttributes<HTMLSpanElement> {
 
 // --c is the border and tint colour; --t is the text colour, a variant that meets AA contrast.
 const toneClasses: Record<PillTone, string> = {
-  neutral: '[--c:var(--muted)] [--t:var(--muted)]',
+  neutral: '[--c:var(--muted)] [--t:var(--muted-text)]',
   req: '[--c:var(--req)] [--t:var(--req-text)]',
   res: '[--c:var(--res)] [--t:var(--res-text)]',
   ev: '[--c:var(--ev)] [--t:var(--ev-text)]',
