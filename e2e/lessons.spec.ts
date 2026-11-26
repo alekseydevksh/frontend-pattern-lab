@@ -60,7 +60,7 @@ test.describe('lesson 1: Optimistic UI', () => {
   test('plays from the first step to the last with the keyboard alone', async ({ page }) => {
     await open(page, LESSON_1);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Optimistic UI');
-    await expect(page.getByText('01. Data and state / Lesson 1 of 2')).toBeVisible();
+    await expect(page.getByText('01. Data and state / Lesson 1 of 12')).toBeVisible();
     await expect(page.getByText('6 steps')).toBeVisible();
 
     // 1. The user waits for the whole round trip.
@@ -155,7 +155,7 @@ test.describe('lesson 1: Optimistic UI', () => {
 
     // 6. The summary: a verdict table in place of the diagram.
     await key(page, 'ArrowRight');
-    await expectStep(page, 6, 6, 'A quick test', 'Restart lesson ↺');
+    await expectStep(page, 6, 6, 'A quick test', 'Next lesson: Push + Pull Sync →');
     await expect(diagram(page)).toHaveCount(0);
     const table = page.getByRole('table', { name: 'IS IT SAFE TO UPDATE FIRST?' });
     await expect(table).toBeVisible();
@@ -173,8 +173,7 @@ test.describe('lesson 1: Optimistic UI', () => {
       await expect(rows.nth(i).getByRole('cell')).toHaveText(verdict);
     }
     await expectMetrics(page, ['—|neutral', '—|neutral', '—|neutral']);
-    await key(page, 'ArrowRight'); // past the end: stays (the next lesson comes in M4)
-    await expect(stepTitle(page)).toHaveText('A quick test');
+    // The arrow past the end opens the next lesson: shell.spec.ts covers it.
 
     // And back again, one step at a time, down to the first.
     for (const title of [
@@ -217,8 +216,10 @@ test.describe('lesson 1: Optimistic UI', () => {
   test('Tab reaches every control in reading order', async ({ page }) => {
     await open(page, LESSON_1);
     const order = [
-      'Optimistic UI',
-      'Push + Pull Sync',
+      'Skip to the content',
+      'Pattern Lab',
+      'All lessons',
+      'Source code',
       'Toggle dark theme',
       'Replay',
       'Pause',
@@ -233,7 +234,6 @@ test.describe('lesson 1: Optimistic UI', () => {
     ];
     for (const name of order) {
       await key(page, 'Tab');
-      // A lesson link's name starts with its number ("01 Optimistic UI"), so match the end.
       await expect(page.locator(':focus')).toHaveAccessibleName(
         new RegExp(`${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
       );
@@ -267,7 +267,7 @@ test.describe('lesson 2: Push + Pull Sync', () => {
   test('plays from the first step to the last with the keyboard alone', async ({ page }) => {
     await open(page, LESSON_2);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Push + Pull Sync');
-    await expect(page.getByText('02. Data and state / Lesson 2 of 2')).toBeVisible();
+    await expect(page.getByText('02. Data and state / Lesson 2 of 12')).toBeVisible();
     await expect(page.getByText('7 steps')).toBeVisible();
 
     // 1. Pull: the first load fills the list.
