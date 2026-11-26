@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { scenes } from '@/components/scenes/registry';
-import { Card } from '@/components/ui';
+import { Card, Pill } from '@/components/ui';
 import type { AnyLesson, AnySceneDefinition } from '@/engine/types';
 import { useLessonPlayer } from '@/engine/useLessonPlayer';
 import { format } from '@/lib/format';
+import { progressFor, saveStep, takeawaysUpTo } from '@/lib/progress';
+import { useProgress } from '@/lib/useProgress';
 import messages from '@messages/en.json';
 import { Diagram } from './Diagram';
 import { LESSON_TITLE_ID } from './LessonHeader';
@@ -15,6 +17,7 @@ import { StepCard } from './StepCard';
 import { StepControls } from './StepControls';
 import { Stepper } from './Stepper';
 import { Takeaways } from './Takeaways';
+import { useStepInUrl } from './useStepInUrl';
 import { VerdictTable } from './VerdictTable';
 
 export interface LessonShellProps {
@@ -23,6 +26,12 @@ export interface LessonShellProps {
   scene?: AnySceneDefinition;
   /** The lesson's heading, breadcrumb and chips, rendered by the page (see `LessonHeader`). */
   header: ReactNode;
+  /**
+   * The lesson that follows this one, if there is one. On the last step the button says
+   * "Next lesson: <title> →" and the right arrow does the same; `onOpen` goes there. Without it
+   * the last step offers to restart the lesson.
+   */
+  nextLesson?: { title: string; onOpen: () => void };
 }
 
 /**
@@ -33,28 +42,54 @@ export interface LessonShellProps {
  * lessons.
  *
  * On a step with a `summary`, a verdict table takes the place of the diagram.
+ *
+ * It also keeps the address (`?step=N`) and the saved progress (`localStorage`) in step with the
+ * player. Both are applied after hydration, so the server HTML is always the plain first step.
  */
-export function LessonShell({ lesson, scene: sceneOverride, header }: LessonShellProps) {
+export function LessonShell({
+  lesson,
+  scene: sceneOverride,
+  header,
+  nextLesson,
+}: LessonShellProps) {
   const scene = sceneOverride ?? scenes[lesson.sceneId];
   if (!scene) throw new Error(`Lesson "${lesson.slug}" has no scene "${lesson.sceneId}".`);
 
-  const player = useLessonPlayer(lesson, scene);
+  const player = useLessonPlayer(lesson, scene, { onPastEnd: nextLesson?.onOpen });
   const { step, stepIndex, stepCount } = player;
   const isLast = stepIndex === stepCount - 1;
 
-  // The furthest step reached, so a takeaway stays ticked after going back.
+  useStepInUrl(stepIndex, stepCount, player.goTo);
+
+  // Remember how far the learner got. Runs after render, so it never touches the server HTML.
+  useEffect(() => saveStep(lesson, stepIndex), [lesson, stepIndex]);
+
+  // The furthest step reached, so a takeaway stays ticked after going back. Takeaways ticked on
+  // an earlier visit come from saved progress, which arrives after hydration.
   const [furthest, setFurthest] = useState(stepIndex);
   if (stepIndex > furthest) setFurthest(stepIndex);
+  const progress = useProgress();
   const reached = useMemo(
-    () => new Set(lesson.steps.slice(0, furthest + 1).map((s) => s.takeawayIndex)),
-    [lesson.steps, furthest],
+    () =>
+      new Set([
+        ...takeawaysUpTo(lesson, furthest),
+        ...(progressFor(progress, lesson)?.ticked ?? []),
+      ]),
+    [lesson, furthest, progress],
   );
 
   return (
     <div className="grid items-start gap-4 min-[921px]:grid-cols-[minmax(0,1.55fr)_minmax(300px,1fr)]">
       <Card as="section" aria-labelledby={LESSON_TITLE_ID}>
         {header}
-        <MetricsRow labels={lesson.metricLabels} metrics={player.metrics} className="mb-3" />
+        <div className="mb-3 flex flex-wrap items-start gap-2">
+          <MetricsRow
+            labels={lesson.metricLabels}
+            metrics={player.metrics}
+            className="min-w-[min(100%,280px)] flex-1"
+          />
+          <Pill>{messages.lesson.simulated}</Pill>
+        </div>
         {step.summary ? (
           <VerdictTable
             summary={step.summary}
@@ -96,8 +131,13 @@ export function LessonShell({ lesson, scene: sceneOverride, header }: LessonShel
             stepIndex={stepIndex}
             stepCount={stepCount}
             nextTitle={step.shortTitle}
+            finalLabel={
+              nextLesson
+                ? format(messages.player.nextLesson, { title: nextLesson.title })
+                : undefined
+            }
             onBack={player.back}
-            onNext={isLast ? () => player.goTo(0) : player.next}
+            onNext={isLast ? (nextLesson?.onOpen ?? (() => player.goTo(0))) : player.next}
           />
         </StepCard>
         <Takeaways items={lesson.takeaways} reached={reached} />

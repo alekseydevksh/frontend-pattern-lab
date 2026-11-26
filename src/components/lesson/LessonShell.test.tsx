@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { optimisticUi } from '@content/lessons/optimistic-ui';
 import { pushPullSync } from '@content/lessons/push-pull-sync';
 import type { AnyLesson } from '@/engine/types';
@@ -10,14 +10,26 @@ import { LessonShell } from './LessonShell';
  * The shell with the real lessons, in jsdom: the first step, the keys, the takeaways, and the
  * verdict table on the last step. Time is faked, so a frame runs when the test says.
  */
-function mount(lesson: AnyLesson = optimisticUi) {
+function mount(
+  lesson: AnyLesson = optimisticUi,
+  nextLesson?: { title: string; onOpen: () => void },
+) {
   return render(
-    <LessonShell lesson={lesson} header={<LessonHeader lesson={lesson} lessonCount={2} />} />,
+    <LessonShell
+      lesson={lesson}
+      header={<LessonHeader lesson={lesson} lessonCount={12} />}
+      nextLesson={nextLesson}
+    />,
   );
 }
 
 const key = (k: string) => act(() => void fireEvent.keyDown(document, { key: k }));
 const heading = () => screen.getByRole('heading', { level: 2 }).textContent;
+
+beforeEach(() => {
+  localStorage.clear();
+  window.history.replaceState(null, '', '/');
+});
 
 afterEach(() => {
   vi.useRealTimers();
@@ -27,7 +39,7 @@ describe('LessonShell', () => {
   it('shows the lesson header, the first step and the start state of the scene', () => {
     mount();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Optimistic UI');
-    expect(screen.getByText('01. Data and state / Lesson 1 of 2')).toBeTruthy();
+    expect(screen.getByText('01. Data and state / Lesson 1 of 12')).toBeTruthy();
     expect(screen.getByText('4 min')).toBeTruthy();
     expect(screen.getByText('6 steps')).toBeTruthy();
     expect(heading()).toBe('Waiting makes a tap feel broken');
@@ -124,5 +136,123 @@ describe('LessonShell', () => {
       render(<LessonShell lesson={{ ...optimisticUi, sceneId: 'missing' }} header={null} />),
     ).toThrow(/no scene "missing"/);
     error.mockRestore();
+  });
+
+  it('says Simulated next to the metrics, outside the diagram', () => {
+    mount();
+    const pill = screen.getByText('Simulated');
+    expect(within(screen.getByRole('img')).queryByText('Simulated')).toBeNull();
+    expect(pill.closest('[role="img"]')).toBeNull();
+  });
+});
+
+describe('LessonShell: the next lesson', () => {
+  const toLast = () => {
+    for (let i = 0; i < 5; i += 1) key('ArrowRight');
+  };
+
+  it('offers the next lesson on the last step, in the button and on the right arrow', () => {
+    const onOpen = vi.fn();
+    mount(optimisticUi, { title: 'Push + Pull Sync', onOpen });
+    expect(screen.getByRole('button', { name: 'Next: Update first →' })).toBeTruthy();
+    toLast();
+    expect(onOpen).not.toHaveBeenCalled(); // arriving at the last step is not leaving it
+    expect(screen.queryByRole('button', { name: /Restart/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Next lesson: Push + Pull Sync →' }));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    key('ArrowRight');
+    expect(onOpen).toHaveBeenCalledTimes(2);
+    expect(heading()).toBe('A quick test');
+  });
+
+  it('keeps Restart lesson, and does nothing on the arrow, when there is no next lesson', () => {
+    mount();
+    toLast();
+    key('ArrowRight');
+    expect(heading()).toBe('A quick test');
+    expect(screen.getByRole('button', { name: 'Restart lesson ↺' })).toBeTruthy();
+  });
+});
+
+describe('LessonShell: the ?step= address', () => {
+  it('opens at the step in the address and writes the clamped step back', () => {
+    window.history.replaceState(null, '', '/lessons/optimistic-ui/?step=99');
+    mount();
+    expect(heading()).toBe('A quick test');
+    expect(window.location.search).toBe('?step=6');
+  });
+
+  it('opens at the first step for a value that is not a number, and cleans the address', () => {
+    window.history.replaceState(null, '', '/lessons/optimistic-ui/?step=abc');
+    mount();
+    expect(heading()).toBe('Waiting makes a tap feel broken');
+    expect(window.location.search).toBe('');
+  });
+
+  it('follows the player, without adding history entries', () => {
+    window.history.replaceState(null, '', '/lessons/optimistic-ui/');
+    const entries = window.history.length;
+    mount();
+    key('ArrowRight');
+    key('ArrowRight');
+    expect(window.location.search).toBe('?step=3');
+    key('ArrowLeft');
+    key('ArrowLeft');
+    expect(window.location.search).toBe('');
+    expect(window.history.length).toBe(entries);
+  });
+});
+
+describe('LessonShell: saved progress', () => {
+  const saved = () => JSON.parse(localStorage.getItem('pl-progress') ?? 'null');
+
+  it('saves the furthest step and the takeaways it ticks', () => {
+    mount();
+    key('ArrowRight');
+    key('ArrowRight');
+    key('ArrowLeft');
+    expect(saved().lessons['optimistic-ui']).toEqual({
+      step: 2,
+      ticked: [0, 1, 2],
+      completed: false,
+    });
+  });
+
+  it('completes the lesson on the last step', () => {
+    mount();
+    for (let i = 0; i < 5; i += 1) key('ArrowRight');
+    expect(saved().lessons['optimistic-ui'].completed).toBe(true);
+  });
+
+  it('shows takeaways ticked on an earlier visit', () => {
+    localStorage.setItem(
+      'pl-progress',
+      JSON.stringify({
+        v: 1,
+        lessons: { 'optimistic-ui': { step: 5, ticked: [0, 1, 2, 3], completed: true } },
+      }),
+    );
+    mount();
+    const reached = screen
+      .getAllByRole('listitem')
+      .filter((li) => li.getAttribute('data-reached') === 'true');
+    expect(reached).toHaveLength(4);
+    expect(heading()).toBe('Waiting makes a tap feel broken'); // progress does not move the player
+  });
+
+  it('works when storage throws', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('full');
+    });
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    mount();
+    key('ArrowRight');
+    expect(heading()).toBe('Update first, ask later');
+    expect(
+      screen.getAllByRole('listitem').filter((li) => li.getAttribute('data-reached') === 'true'),
+    ).toHaveLength(2);
+    vi.restoreAllMocks();
   });
 });
