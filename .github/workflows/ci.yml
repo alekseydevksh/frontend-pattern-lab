@@ -43,6 +43,11 @@ jobs:
       - name: Build (static export)
         run: pnpm build
 
+      # Fails the build if a lesson page loads more than 150 KB of gzipped JavaScript, or if the
+      # lessons' scenes are no longer split apart. Measured per route from the export built above.
+      - name: JavaScript budget (150 KB per lesson page)
+        run: pnpm budget
+
       - name: Build Storybook
         run: pnpm build-storybook
 
@@ -52,7 +57,7 @@ jobs:
       - name: End-to-end tests
         run: pnpm test:e2e
 
-      # Lighthouse on the catalog and one lesson page (mobile profile), then the JavaScript budget.
+      # Lighthouse on the catalog and one lesson page (mobile profile), then the JavaScript budget again.
       # It measures the export built above, using the browser Playwright just installed.
       - name: Lighthouse CI and JavaScript budget
         run: pnpm lighthouse
