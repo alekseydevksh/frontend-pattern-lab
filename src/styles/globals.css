@@ -1,2 +1,49 @@
 @import 'tailwindcss';
 @import './tokens.css';
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* The drafting-table paper: a faint grid under everything. */
+  body {
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  code,
+  kbd {
+    font-family: var(--mono);
+  }
+
+  /* One visible focus ring for every interactive element: 2px, never removed. */
+  :focus-visible {
+    outline: 2px solid var(--ev);
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion: no transitions, no animations, no smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
