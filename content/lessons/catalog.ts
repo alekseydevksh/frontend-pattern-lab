@@ -43,7 +43,9 @@ export const catalog: readonly CatalogRow[] = [
     summary:
       'Render only the rows a reader can see, and keep the scrollbar honest while the list stays long.',
     track: 'Rendering and performance',
-    status: 'soon',
+    status: 'ready',
+    minutes: 5,
+    stepCount: 7,
   },
   {
     slug: 'normalized-data',

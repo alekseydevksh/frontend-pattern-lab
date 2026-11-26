@@ -36,6 +36,12 @@ export const sceneRegistry: Readonly<Record<string, SceneEntry>> = {
       import('./PushPullScene').then((m) => ({ default: bindScene(m.pushPullScene) })),
     ),
   },
+  virtualization: {
+    load: () => import('./VirtualizationScene').then((m) => m.virtualizationScene),
+    View: dynamic(() =>
+      import('./VirtualizationScene').then((m) => ({ default: bindScene(m.virtualizationScene) })),
+    ),
+  },
 };
 
 /** The entry for `sceneId`. Throws on an id that is not registered, which validation rules out. */

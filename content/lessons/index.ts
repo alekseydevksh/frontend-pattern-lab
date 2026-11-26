@@ -13,6 +13,7 @@ export type LessonLoader = () => Promise<AnyLesson>;
 export const lessonLoaders: Readonly<Record<string, LessonLoader>> = {
   'optimistic-ui': () => import('./optimistic-ui').then((m) => m.optimisticUi),
   'push-pull-sync': () => import('./push-pull-sync').then((m) => m.pushPullSync),
+  virtualization: () => import('./virtualization').then((m) => m.virtualization),
 };
 
 /** The lesson for `slug`, or null if there is no playable lesson with that slug. */
