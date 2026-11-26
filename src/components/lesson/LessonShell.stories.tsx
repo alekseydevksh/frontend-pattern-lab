@@ -31,6 +31,11 @@ export const PushPullSync: Story = {
   args: { lesson: pushPullSync, header: <LessonHeader lesson={pushPullSync} lessonCount={2} /> },
 };
 
+/** The last step of a lesson with a next lesson says "Next lesson: <title> →" (press →, then →). */
+export const WithNextLesson: Story = {
+  args: { nextLesson: { title: 'Push + Pull Sync', onOpen: () => {} } },
+};
+
 /** Lesson 1 in the light and the dark theme at once, one above the other. */
 export const BothThemes: Story = {
   render: (args) => (
