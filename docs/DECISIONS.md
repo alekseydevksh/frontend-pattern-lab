@@ -515,3 +515,78 @@ cards' h3), and the list is labelled by it. `catalog.trackLabel` in `messages/en
 
 **Lighthouse** (mobile profile, median of 5, nothing loosened): catalog and lesson 1 both performance 100,
 accessibility 100, best practices 100, LCP 0.75 s, CLS 0.000; total blocking time 31 ms and 14 ms.
+
+## D15. Lesson 3, Virtualization, and the owner's answers to the M5 prep questions (2026-11-26)
+
+No dependency was added. `src/engine/` is unchanged (`git diff main -- src/engine` is empty). Owner answers,
+recorded:
+
+1. The 150 KB lesson limit stays, and app code is not trimmed to fit. A lesson that breaks it stops the work
+   and the numbers are reported.
+2. One data file, one scene, two registry lines and the catalog entry per lesson: accepted.
+3. The time marker difference when going back (D14): accepted.
+4. **The catalog has a limit of 145 KB** of gzipped JavaScript in `pnpm budget` (it loads 139.2 KB, all
+   framework). The CI step's name says so; a test covers it.
+5. The reserved step card height and the step text repeated in the HTML (D14): accepted. **The metric
+   labels cut off on a phone are fixed** (below).
+
+**Metric labels on a phone.** A label now wraps instead of being cut off ("CLIENT VS…"), and the value sits at
+the bottom of its tile, so the three values stay level when one label takes two or three lines. Wrapping was
+chosen over shortening: shortening would change lesson 2's data and break the prototype parity test, which
+compares the metric labels with the prototype; and later labels such as "Time to first useful content"
+(lesson 10) cannot be cut to fit a 90 px tile. No lesson data changed. `e2e/metric-labels.spec.ts` opens every
+ready lesson at 375 px and fails if a label is wider than its box or sticks out of the tile; it failed on
+`main` before the fix.
+
+**Lesson 3, choices the spec did not settle**
+
+- **Seven steps, not six.** The outline's six, plus "Or let the browser skip the work" (CSS containment,
+  `content-visibility: auto`) as step 5, because the owner asked for containment in the scene and it is the
+  lighter tool the verdict table points to. It comes before the costs of a window, so the summary can weigh
+  both.
+- **The scene draws a simulation**: eight row slots (two overscan rows, four in the viewport, two overscan
+  rows) and a block above and below that stands for the rest of the list, whatever the counts. The row
+  numbers, the blocks' counts, the spacers' pixel heights, the scrollbar thumb and the DOM panel's counts are
+  computed from the state (`total`, `loaded`, `first`, `mounted`, `spacers`, `rowPx`, `nodesPerRow`). The
+  viewport's place in the slots is a constant of the drawing, as a panel's position is; everything a lesson
+  may want to move is in the data.
+- **Layout** follows lessons 1 and 2: the browser on the left, a lane, panels on the right (API above, DOM
+  below), the viewBox 640 wide. Colours keep their meaning: orange for the viewport (what the user sees),
+  red for rows mounted but unseen and for the costs, teal for a window's DOM count and for containment,
+  grey for overscan and spacers.
+- **Numbers.** 10,000 rows, 50 per page, 40 px per row and about 6 nodes per row are illustrative; the
+  drawing says "illustrative numbers", and step 1 says the counts are illustrative and the render cost
+  simulated. The render cost is a metric written in the lesson data (as lesson 1's are), the other two are
+  computed by the scene. The DOM count is marked bad above `nodeBudget` (1,500 nodes) and good in a window.
+- **Code samples are `tsx`.** `Step.code` allows `ts`, `tsx` and `json`; adding `css` would change the engine
+  types, so the containment sample is written as a React `style` object.
+- **The API heading is `/items`**, not `GET /items`, so the request packet's label is not drawn twice.
+
+**Tests, reusable for the next lessons**
+
+- `e2e/lesson-03-virtualization.spec.ts` plays the lesson; the shared steps are in `e2e/lesson-helpers.ts`
+  (frozen clock, metrics, verdict table, axe on every step and with a packet in flight). Later lessons copy
+  the spec.
+- `e2e/step-card.spec.ts`, `e2e/layout-shift.spec.ts`, `e2e/shell.spec.ts`, `content/lessons/catalog.test.ts`
+  and the catalog page test now read the ready lessons from the catalog instead of naming two, so a new
+  lesson does not edit them. Lesson 2's last step now says "Next lesson: Virtualization →".
+- `pnpm screenshots <slug>` (`scripts/lesson-screenshots.mjs`) saves every step in both themes at 1280 and
+  375 px to `../pattern-lab-screenshots/<slug>/`, outside the repository.
+- `LIGHTHOUSE_LESSON=<slug> pnpm lighthouse` adds that lesson's page to the Lighthouse run. CI still measures
+  the catalog and lesson 1 only, to keep its run time.
+- The "New lesson procedure" in `docs/ADDING_A_LESSON.md` holds the whole checklist; `CLAUDE.md` points to it.
+
+**JavaScript per route, from the export** (gzipped, level 9):
+
+| Route                      | Before (main) | After (this branch) | Of which its own scene |
+| -------------------------- | ------------- | ------------------- | ---------------------- |
+| `/` (catalog)              | 139.2 KB      | 139.2 KB            | none                   |
+| `/lessons/optimistic-ui/`  | 148.5 KB      | 148.6 KB            | 1.5 KB                 |
+| `/lessons/push-pull-sync/` | 148.4 KB      | 148.5 KB            | 1.4 KB                 |
+| `/lessons/virtualization/` | none          | 149.3 KB            | 2.2 KB                 |
+
+The new page passes with **0.7 KB** to spare. Every lesson page also grew by 0.1 KB: the scene registry is in
+the code every lesson page shares, and each entry adds a `next/dynamic` wrapper. At that rate the nine lessons
+still to come add about 0.9 KB to every page, so a lesson 12 scene the size of this one (2.2 KB) would come
+to about 150.2 KB, over the limit. This is a projection, not a measurement. See the open questions in the
+pull request.
