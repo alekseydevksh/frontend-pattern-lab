@@ -21,8 +21,7 @@
       "chips": "Chips",
       "cards": "Cards",
       "metrics": "Metric tiles",
-      "keys": "Keyboard keys",
-      "theme": "Theme toggle"
+      "keys": "Keyboard keys"
     },
     "samples": {
       "primary": "Next: update first",
