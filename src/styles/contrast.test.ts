@@ -85,29 +85,41 @@ describe.each(Object.entries(themes))('text contrast in the %s theme', (_theme, 
 });
 
 /**
- * --on-signal is the text colour on a filled signal colour. The pairs below are the fills it is
- * used on (see D12 in docs/DECISIONS.md): the toast is --bad, the pending badge is the
- * -text shade of --req. The light theme's raw --req and --res are too pale for white text
- * (3.8:1 and 4.4:1), which is why a badge in those colours uses the shade, and why they are
- * not in this list. --ev and --bad pass raw in both themes, so they are listed as they are.
+ * --on-signal is the text colour on a filled signal colour. The fills below are the ones text
+ * sits on (see D12 in docs/DECISIONS.md): --bad as it is (the toast), --ev as it is, and the
+ * -solid shades of --req and --res (the Like button and the pending badge). The light theme's
+ * raw --req and --res are too pale for white text, which is why those two have a shade.
  */
-describe.each(Object.entries(themes))('text on a filled signal colour in the %s theme', (_t, c) => {
-  const onSignal = c['on-signal']!;
-  const fills: Record<string, Rgb> = {
-    bad: c.bad!,
-    ev: c.ev!,
-    'req-text': mix(c.req!, 0.7, c.ink!),
-    'res-text': mix(c.res!, 0.7, c.ink!),
-  };
-  for (const [name, fill] of Object.entries(fills)) {
-    it(`on-signal on ${name} is at least 4.5:1`, () => {
-      expect(contrastRatio(onSignal, fill)).toBeGreaterThanOrEqual(4.5);
-    });
-  }
+describe.each(Object.entries(themes))(
+  'text on a filled signal colour in the %s theme',
+  (theme, c) => {
+    const onSignal = c['on-signal']!;
+    const fills: Record<string, Rgb> = {
+      bad: c.bad!,
+      ev: c.ev!,
+      'req-solid': mix(c.req!, 0.85, c.ink!),
+      'res-solid': mix(c.res!, 0.85, c.ink!),
+    };
+    for (const [name, fill] of Object.entries(fills)) {
+      it(`on-signal on ${name} is at least 4.5:1`, () => {
+        expect(contrastRatio(onSignal, fill)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
 
-  it('is documented as the reason for the shade: raw req is below 4.5:1 in the light theme only', () => {
-    const raw = contrastRatio(onSignal, c.req!);
-    if (_t === 'light') expect(raw).toBeLessThan(4.5);
-    else expect(raw).toBeGreaterThanOrEqual(4.5);
+    it('needs the shades: the raw --req and --res fail in the light theme only', () => {
+      const raw = [c.req!, c.res!].map((fill) => contrastRatio(onSignal, fill));
+      if (theme === 'light') for (const ratio of raw) expect(ratio).toBeLessThan(4.5);
+      else for (const ratio of raw) expect(ratio).toBeGreaterThanOrEqual(4.5);
+    });
+  },
+);
+
+describe('the solid shades', () => {
+  it('mix 85% of the colour with 15% ink, as this test assumes', () => {
+    for (const tone of ['req', 'res']) {
+      expect(tokens).toContain(
+        `--${tone}-solid: color-mix(in srgb, var(--${tone}) 85%, var(--ink));`,
+      );
+    }
   });
 });

@@ -80,15 +80,18 @@
   --res-text: color-mix(in srgb, var(--res) 70%, var(--ink));
   --ev-text: color-mix(in srgb, var(--ev) 70%, var(--ink));
   --bad-text: color-mix(in srgb, var(--bad) 70%, var(--ink));
+  /* Fills that carry --on-signal text, where the raw colour is too pale for it (see below). */
+  --req-solid: color-mix(in srgb, var(--req) 85%, var(--ink));
+  --res-solid: color-mix(in srgb, var(--res) 85%, var(--ink));
 }
 
 /*
- * --on-signal is the colour of text that sits on a filled signal colour (a toast, a badge).
- * It is white in the light theme and the dark paper colour in the dark theme, because the
- * dark theme's signal colours are light. It is held to 4.5:1 on the fills it is used on by
- * src/styles/contrast.test.ts. Which fills those are is decided in D12 of docs/DECISIONS.md:
- * the light theme's raw --req and --res are too pale for white text, so a badge in those
- * colours is filled with the matching -text shade instead.
+ * --on-signal is the colour of text that sits on a filled signal colour (a toast, a badge, a
+ * filled button). It is white in the light theme and the dark paper colour in the dark theme,
+ * because the dark theme's signal colours are light. --bad and --ev reach 4.5:1 with it as
+ * they are. The light theme's --req (3.8:1) and --res (4.4:1) do not, so a fill that carries
+ * text in those colours uses --req-solid or --res-solid, which are 15% ink mixed in: close to
+ * the signal colour, and 4.5:1 or more. src/styles/contrast.test.ts holds all of this.
  */
 
 /* Fonts. The --font-* variables on <html> come from next/font (see src/lib/fonts.ts). */
@@ -116,6 +119,8 @@
   --color-ev-text: var(--ev-text);
   --color-bad-text: var(--bad-text);
   --color-on-signal: var(--on-signal);
+  --color-req-solid: var(--req-solid);
+  --color-res-solid: var(--res-solid);
 
   --font-display: var(--display);
   --font-body: var(--body);

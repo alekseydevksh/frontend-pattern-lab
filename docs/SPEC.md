@@ -268,7 +268,7 @@ The look is a drafting-table workbench: cool paper with a faint grid, deep ink t
 | `--res` | #0d8587 | #38c3c5 | Server answers, confirmed state |
 | `--ev` | #6c4fe0 | #a592ff | Pushed events |
 | `--bad` | #c42248 | #ff6384 | Failure, rollback |
-| `--on-signal` | #ffffff | #0c1426 | Text on a filled signal colour (M3). See D12 for which fills |
+| `--on-signal` | #ffffff | #0c1426 | Text on a filled signal colour (M3). `--req-solid` and `--res-solid` are the fills for it where the raw colour is too pale; see D12 |
 
 **Type.** Bricolage Grotesque for headings, IBM Plex Sans for body text, IBM Plex Mono for labels, metrics and code. Keep text lines near 65 characters. Use tabular numbers wherever digits line up.
 
