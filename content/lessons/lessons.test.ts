@@ -10,6 +10,10 @@ import { lessons } from './index';
  * with deliberately broken lessons, in src/engine/validate.test.ts.
  */
 describe('content/lessons', () => {
+  it('registers at least two lessons, so an emptied registry cannot pass for nothing to check', () => {
+    expect(lessons.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('has no validation problems', () => {
     expect(validateLessons(lessons, scenes)).toEqual([]);
   });
