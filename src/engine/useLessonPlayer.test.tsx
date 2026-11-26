@@ -523,6 +523,40 @@ describe('keyboard', () => {
     expect(t.player.stepIndex).toBe(1);
   });
 
+  it('calls onPastEnd for the right arrow on the last step, and only there', () => {
+    const onPastEnd = vi.fn();
+    const t = setup({ onPastEnd });
+    press('ArrowRight');
+    press('ArrowRight');
+    expect(t.player.stepIndex).toBe(2);
+    expect(onPastEnd).not.toHaveBeenCalled(); // moving onto the last step is not past it
+    press('ArrowRight');
+    expect(onPastEnd).toHaveBeenCalledTimes(1);
+    expect(t.player.stepIndex).toBe(2); // the hook itself stays where it is
+    press('ArrowLeft');
+    press('r');
+    press(' ');
+    expect(onPastEnd).toHaveBeenCalledTimes(1);
+    expect(t.player.stepIndex).toBe(1);
+  });
+
+  it('does not call onPastEnd for the next() function, a held key or a modifier', () => {
+    const onPastEnd = vi.fn();
+    const t = setup({ onPastEnd });
+    act(() => t.player.goTo(2));
+    act(() => t.player.next());
+    press('ArrowRight', { repeat: true });
+    press('ArrowRight', { metaKey: true });
+    expect(onPastEnd).not.toHaveBeenCalled();
+  });
+
+  it('does nothing on the last step when no onPastEnd is given', () => {
+    const t = setup();
+    act(() => t.player.goTo(2));
+    press('ArrowRight');
+    expect(t.player.stepIndex).toBe(2);
+  });
+
   it('R replays, from the step start, in either case', () => {
     const t = setup();
     t.advance(400);
