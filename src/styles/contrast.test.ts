@@ -21,7 +21,7 @@ function block(selectorStart: string): string {
 
 function colours(css: string): Record<string, Rgb> {
   const found: Record<string, Rgb> = {};
-  for (const [, name, hex] of css.matchAll(/--([a-z]+): (#[0-9a-f]{6});/g)) {
+  for (const [, name, hex] of css.matchAll(/--([a-z-]+): (#[0-9a-f]{6});/g)) {
     const n = parseInt(hex!.slice(1), 16);
     found[name!] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   }
@@ -81,5 +81,33 @@ describe.each(Object.entries(themes))('text contrast in the %s theme', (_theme, 
 
   it('has the contrast helper agree with a known pair: black on white is 21:1', () => {
     expect(contrastRatio([0, 0, 0], [255, 255, 255])).toBeCloseTo(21, 5);
+  });
+});
+
+/**
+ * --on-signal is the text colour on a filled signal colour. The pairs below are the fills it is
+ * used on (see D12 in docs/DECISIONS.md): the toast is --bad, the pending badge is the
+ * -text shade of --req. The light theme's raw --req and --res are too pale for white text
+ * (3.8:1 and 4.4:1), which is why a badge in those colours uses the shade, and why they are
+ * not in this list. --ev and --bad pass raw in both themes, so they are listed as they are.
+ */
+describe.each(Object.entries(themes))('text on a filled signal colour in the %s theme', (_t, c) => {
+  const onSignal = c['on-signal']!;
+  const fills: Record<string, Rgb> = {
+    bad: c.bad!,
+    ev: c.ev!,
+    'req-text': mix(c.req!, 0.7, c.ink!),
+    'res-text': mix(c.res!, 0.7, c.ink!),
+  };
+  for (const [name, fill] of Object.entries(fills)) {
+    it(`on-signal on ${name} is at least 4.5:1`, () => {
+      expect(contrastRatio(onSignal, fill)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
+  it('is documented as the reason for the shade: raw req is below 4.5:1 in the light theme only', () => {
+    const raw = contrastRatio(onSignal, c.req!);
+    if (_t === 'light') expect(raw).toBeLessThan(4.5);
+    else expect(raw).toBeGreaterThanOrEqual(4.5);
   });
 });

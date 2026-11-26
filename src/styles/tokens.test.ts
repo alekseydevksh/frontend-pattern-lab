@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const root = join(__dirname, '..', '..');
 const tokens = readFileSync(join(__dirname, 'tokens.css'), 'utf8');
 
-/** Values from section 6 of the spec. */
+/** Values from the colour table of the spec (the last row, --on-signal, was added in M3). */
 const spec = {
   paper: ['#edf0f5', '#0c1426'],
   panel: ['#fafbfd', '#121d36'],
@@ -17,6 +17,7 @@ const spec = {
   res: ['#0d8587', '#38c3c5'],
   ev: ['#6c4fe0', '#a592ff'],
   bad: ['#c42248', '#ff6384'],
+  'on-signal': ['#ffffff', '#0c1426'],
 } as const;
 
 function block(selectorStart: string): string {
