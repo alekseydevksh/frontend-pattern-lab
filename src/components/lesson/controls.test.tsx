@@ -89,6 +89,53 @@ describe('StepControls', () => {
     expect(screen.getByRole('button', { name: 'Next lesson: Push + Pull Sync →' })).toBeTruthy();
   });
 
+  describe('with every label reserved', () => {
+    const reserveFor = ['Second', 'A much longer title for the third step', ''];
+
+    it('keeps the button named by the one label on show, never by the invisible copies', () => {
+      steps({ stepIndex: 0, nextTitle: 'Second', reserveFor });
+      expect(screen.getByRole('button', { name: 'Next: Second →' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /longer title/ })).toBeNull();
+    });
+
+    it("adds an invisible, hidden copy of each label, the last step's included", () => {
+      const { container } = render(
+        <StepControls
+          stepIndex={0}
+          stepCount={3}
+          nextTitle="Second"
+          finalLabel="Next lesson: X →"
+          reserveFor={reserveFor}
+          onBack={vi.fn()}
+          onNext={vi.fn()}
+        />,
+      );
+      const copies = [...container.querySelectorAll('[data-label-sizer]')];
+      expect(copies.map((c) => c.textContent)).toEqual([
+        'Next: Second →',
+        'Next: A much longer title for the third step →',
+        'Next lesson: X →',
+      ]);
+      for (const copy of copies) {
+        expect(copy.getAttribute('aria-hidden')).toBe('true');
+        expect(copy.className).toContain('invisible');
+      }
+    });
+
+    it('draws no copies without it', () => {
+      const { container } = render(
+        <StepControls
+          stepIndex={0}
+          stepCount={3}
+          nextTitle="Second"
+          onBack={vi.fn()}
+          onNext={vi.fn()}
+        />,
+      );
+      expect(container.querySelectorAll('[data-label-sizer]')).toHaveLength(0);
+    });
+  });
+
   it('shows the keyboard hint', () => {
     steps();
     expect(screen.getByText('Space')).toBeTruthy();

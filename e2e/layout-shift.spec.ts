@@ -7,9 +7,11 @@ import { waitForHydration } from './support';
  * own layout-shift observer running from before the page loads, and requires a total of exactly 0.
  *
  * Two totals are kept. The standard one ignores shifts within 500 ms of a key press or click, as
- * the CLS metric does. The strict one counts every shift, including the ones a step change causes
- * (a step card whose text is longer pushes the takeaways down); it is not asserted to be 0, only
- * reported, because a step change the learner asked for is not an unexpected shift.
+ * the CLS metric does, and must be exactly 0. The strict one counts every shift, including the
+ * ones a step change causes; it is only reported. Since the step card keeps the height of its
+ * tallest step (D14) nothing around the card moves on a step change (e2e/step-card.spec.ts checks
+ * that); what is left in the strict total is the new step's text replacing the old inside the card
+ * (0.00 to 0.01), where it was 0.06 to 0.08 before.
  */
 
 const lessons = [

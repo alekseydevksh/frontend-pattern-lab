@@ -1,13 +1,13 @@
+import { useId, type HTMLAttributes } from 'react';
 import type { SummaryTable } from '@/engine/types';
 import { cx } from '@/lib/cx';
 
-export interface VerdictTableProps {
+export interface VerdictTableProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   summary: SummaryTable;
   /** What the table says in a sentence: the step's `sceneAlt`. Read after the table's name. */
   description: string;
   /** The scene's viewBox, so the table takes the same room as the diagram it replaces. */
   viewBox: string;
-  className?: string;
 }
 
 const verdictTone = {
@@ -24,20 +24,29 @@ function aspectOf(viewBox: string): string {
 /**
  * A verdict table in the place of the diagram on a summary step: one row per case, with the
  * verdict as a word in a tinted pill. A real table, so a screen reader can move through it by
- * row. Under the diagram's `min-w`, with the same height, so nothing moves when the step
- * changes.
+ * row. It has the diagram's `min-w` and at least its height; when its rows need more room than
+ * that (a long table on a narrow screen), it is taller, which is why the lesson shell reserves the
+ * table's height under every diagram, so nothing moves when the step changes.
  */
-export function VerdictTable({ summary, description, viewBox, className }: VerdictTableProps) {
+export function VerdictTable({
+  summary,
+  description,
+  viewBox,
+  className,
+  ...rest
+}: VerdictTableProps) {
+  const descriptionId = useId();
   return (
     <div
       className={cx(
         'overflow-x-auto rounded-control border-[1.5px] border-line bg-paper',
         className,
       )}
+      {...rest}
     >
       <div className="min-w-[540px] px-[5%] py-6" style={{ aspectRatio: aspectOf(viewBox) }}>
         <table
-          aria-describedby="verdict-description"
+          aria-describedby={descriptionId}
           className="w-full border-separate border-spacing-y-2"
         >
           <caption className="mb-1 text-left font-mono text-label font-medium tracking-caps-wide text-muted-text">
@@ -67,7 +76,7 @@ export function VerdictTable({ summary, description, viewBox, className }: Verdi
             ))}
           </tbody>
         </table>
-        <p id="verdict-description" className="sr-only">
+        <p id={descriptionId} className="sr-only">
           {description}
         </p>
       </div>

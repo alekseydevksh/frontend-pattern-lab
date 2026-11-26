@@ -14,6 +14,12 @@ export interface StepControlsProps {
   nextTitle: string;
   /** Text of the Next button on the last step. Defaults to "Restart lesson". */
   finalLabel?: string;
+  /**
+   * The `shortTitle` of every step, in order. The button is then as tall as its longest label
+   * at the width it has (a long label wraps to two lines on a phone), so changing step never
+   * changes the height of the card (see `StepCard`). Without it the button fits the label on show.
+   */
+  reserveFor?: readonly string[];
   onBack: () => void;
   /** On the last step this runs too: the page decides whether it restarts or moves on. */
   onNext: () => void;
@@ -30,11 +36,17 @@ export function StepControls({
   stepCount,
   nextTitle,
   finalLabel = text.restart,
+  reserveFor,
   onBack,
   onNext,
   className,
 }: StepControlsProps) {
   const isLast = stepIndex === stepCount - 1;
+  const label = isLast ? finalLabel : format(text.next, { title: nextTitle });
+  // Every label the button can have: one per step, and the last step's own.
+  const labels = reserveFor?.map((title, i) =>
+    i === reserveFor.length - 1 ? finalLabel : format(text.next, { title }),
+  );
 
   return (
     <div className={cx('flex flex-col gap-2.5', className)}>
@@ -43,7 +55,26 @@ export function StepControls({
           {text.back}
         </Button>
         <Button variant="primary" className="flex-1" onClick={onNext}>
-          {isLast ? finalLabel : format(text.next, { title: nextTitle })}
+          {labels ? (
+            // The label on show and an invisible copy of each possible label, in one grid cell.
+            // The copies are hidden from assistive technology, so the button's name is the one
+            // label on show.
+            <span className="grid">
+              <span className="[grid-area:1/1]">{label}</span>
+              {labels.map((other, i) => (
+                <span
+                  key={i}
+                  aria-hidden="true"
+                  data-label-sizer=""
+                  className="invisible [grid-area:1/1]"
+                >
+                  {other}
+                </span>
+              ))}
+            </span>
+          ) : (
+            label
+          )}
         </Button>
       </div>
 

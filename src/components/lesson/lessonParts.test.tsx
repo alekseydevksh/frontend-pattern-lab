@@ -159,6 +159,64 @@ describe('StepCard', () => {
     expect(screen.getByRole('region', { name: 'Code example' }).textContent).toBe('{ "a": 1 }');
   });
 
+  describe('with the height of every step reserved', () => {
+    const steps = [
+      step,
+      {
+        ...step,
+        title: 'Then something changes',
+        code: { language: 'ts' as const, source: 'a()' },
+      },
+      { ...step, title: 'A third step', body: ['Only one paragraph.'] },
+    ];
+
+    function mount(current = 1) {
+      return render(
+        <StepCard step={steps[current]!} stepIndex={current} stepCount={3} reserveFor={steps} />,
+      );
+    }
+
+    it('adds one invisible copy of every step, in the same grid cell as the visible one', () => {
+      const { container } = mount();
+      const sizers = container.querySelectorAll('[data-step-sizer]');
+      expect(sizers).toHaveLength(3);
+      for (const sizer of sizers) {
+        expect(sizer.className).toContain('invisible');
+        expect(sizer.className).toContain('[grid-area:1/1]');
+      }
+      const live = container.querySelector('[aria-live="polite"]')!;
+      expect(live.className).toContain('[grid-area:1/1]');
+      expect(live.parentElement).toBe(sizers[0]!.parentElement);
+    });
+
+    it('hides the copies from assistive technology and the keyboard, so nothing is read twice', () => {
+      const { container } = mount();
+      for (const sizer of container.querySelectorAll('[data-step-sizer]')) {
+        expect(sizer.getAttribute('aria-hidden')).toBe('true');
+        expect(sizer.hasAttribute('inert')).toBe(true);
+        expect(sizer.hasAttribute('aria-live')).toBe(false);
+      }
+      // What an assistive technology can reach: one heading, one code region, one live region.
+      expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(1);
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Then something changes');
+      expect(screen.getAllByRole('region', { name: 'Code example' })).toHaveLength(1);
+      expect(container.querySelectorAll('[aria-live]')).toHaveLength(1);
+    });
+
+    it('keeps the live region as it is without the reserve: the visible step only', () => {
+      const { container } = mount(2);
+      const live = container.querySelector('[aria-live="polite"]')!;
+      expect(live.textContent).toContain('A third step');
+      expect(live.textContent).not.toContain('Then something changes');
+      expect(live.textContent).toContain('Step 3 / 3');
+    });
+
+    it('draws nothing extra without reserveFor', () => {
+      const { container } = render(<StepCard step={step} stepIndex={0} stepCount={2} />);
+      expect(container.querySelectorAll('[data-step-sizer]')).toHaveLength(0);
+    });
+  });
+
   it('keeps the key idea label and text together', () => {
     render(<StepCard step={step} stepIndex={0} stepCount={2} />);
     expect(screen.getByText('Key idea').parentElement?.textContent).toContain('Pull is complete.');
