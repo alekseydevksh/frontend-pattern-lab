@@ -456,7 +456,7 @@ function metrics(s: NormalizedState): [Metric, Metric, Metric] {
   const syncText = format(labels.syncOf, { n: inSync, total });
   const syncMetric: Metric = !loaded
     ? { value: labels.none }
-    : inSync < total
+    : s.view.some((n) => isStale(s, n))
       ? { value: syncText, tone: 'bad' }
       : s.mode === 'entities'
         ? { value: syncText, tone: 'good' }
