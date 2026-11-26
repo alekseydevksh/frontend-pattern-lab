@@ -50,5 +50,29 @@
       "keyReplay": "replay",
       "keyPause": "pause"
     }
+  },
+  "player": {
+    "controlsLabel": "Playback controls",
+    "stepsLabel": "Lesson steps",
+    "replay": "Replay",
+    "pause": "Pause",
+    "resume": "Resume",
+    "back": "Back",
+    "next": "Next: {title} →",
+    "restart": "Restart lesson ↺",
+    "stepCounter": "Step {current} of {total}",
+    "stepButton": "Step {number}: {title}",
+    "hint": {
+      "step": "step",
+      "replay": "replay",
+      "pause": "pause"
+    }
+  },
+  "playerTest": {
+    "title": "Player test page",
+    "description": "A dummy lesson that plays end to end. The end-to-end tests drive the player through this page.",
+    "diagramCaption": "Diagram",
+    "keyIdea": "Key idea",
+    "lessonMeta": "{minutes} min · {level}"
   }
 }
