@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { readyEntries } from '../content/lessons/catalog';
 import { waitForHydration } from './support';
 
 /**
  * "No layout shift when the step changes." The step card is as tall as the tallest step of its
- * lesson, so changing step moves nothing below it. This plays every step of both lessons on a
+ * lesson, so changing step moves nothing below it. This plays every step of every ready lesson on a
  * desktop and a phone, and checks that the things around the card stay where they are:
  *
  *  - the card itself, the Back and Next buttons in it, and the takeaways card under it;
@@ -13,10 +14,12 @@ import { waitForHydration } from './support';
  * Positions are measured from the top of the document, so a scroll cannot hide a move.
  */
 
-const lessons = [
-  { name: 'Optimistic UI', url: '/lessons/optimistic-ui/', steps: 6 },
-  { name: 'Push + Pull Sync', url: '/lessons/push-pull-sync/', steps: 7 },
-];
+/** Every ready lesson in the catalog, so a new lesson is covered the day it is added. */
+const lessons = readyEntries.map((entry) => ({
+  name: entry.title,
+  url: `/lessons/${entry.slug}/`,
+  steps: entry.stepCount,
+}));
 const viewports = [
   { name: 'desktop', width: 1280, height: 900 },
   { name: 'phone', width: 390, height: 844 },
@@ -32,8 +35,8 @@ async function box(page: Page, selector: ReturnType<Page['locator']>) {
   });
 }
 
-async function measure(page: Page) {
-  const stage = page.getByRole('region', { name: /^(Optimistic UI|Push \+ Pull Sync)$/ });
+async function measure(page: Page, lesson: string) {
+  const stage = page.getByRole('region', { name: lesson, exact: true });
   return {
     stepCard: await box(page, page.getByRole('region', { name: 'Current step' })),
     back: await box(page, page.getByRole('button', { name: 'Back', exact: true })),
@@ -65,14 +68,14 @@ for (const viewport of viewports) {
       await page.goto(lesson.url);
       await waitForHydration(page);
 
-      const first = await measure(page);
+      const first = await measure(page, lesson.name);
       const heights: number[] = [await naturalHeight(page)];
       const cell: number[] = [(await box(page, live(page))).height];
 
       for (let step = 2; step <= lesson.steps; step += 1) {
         await page.keyboard.press('ArrowRight');
         await expect(live(page)).toContainText(`Step ${step} / ${lesson.steps}`);
-        const now = await measure(page);
+        const now = await measure(page, lesson.name);
         for (const key of Object.keys(first) as Array<keyof typeof first>) {
           expect(now[key], `step ${step}: ${key}`).toEqual(first[key]);
         }

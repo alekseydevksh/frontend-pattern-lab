@@ -361,7 +361,7 @@ test.describe('lesson 2: Push + Pull Sync', () => {
 
     // 7. The summary: a verdict table.
     await key(page, 'ArrowRight');
-    await expectStep(page, 7, 7, 'Which one does the job', 'Restart lesson ↺');
+    await expectStep(page, 7, 7, 'Which one does the job', 'Next lesson: Virtualization →');
     await expect(diagram(page)).toHaveCount(0);
     const table = page.getByRole('table', { name: 'WHICH ONE DOES THE JOB?' });
     const rows = table.getByRole('row');
@@ -377,12 +377,7 @@ test.describe('lesson 2: Push + Pull Sync', () => {
       await expect(rows.nth(i).getByRole('cell')).toHaveText(verdict);
     }
     await expectMetrics(page, ['in sync|good', 'open|good', '0|neutral']);
-    await key(page, 'ArrowRight');
-    await expect(stepTitle(page)).toHaveText('Which one does the job');
-
-    // The Restart button starts the lesson over.
-    await nextButton(page).click();
-    await expect(stepTitle(page)).toHaveText('Load with a request');
+    // The arrow past the end opens the next lesson: shell.spec.ts covers it.
   });
 });
 

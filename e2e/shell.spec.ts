@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { catalog, readyEntries } from '../content/lessons/catalog';
 import { expectNoAxeViolations, storeTheme, waitForHydration } from './support';
 
 /**
@@ -10,6 +11,12 @@ import { expectNoAxeViolations, storeTheme, waitForHydration } from './support';
 const LESSON_1 = '/lessons/optimistic-ui/';
 const LESSON_2 = '/lessons/push-pull-sync/';
 const STORAGE_KEY = 'pl-progress';
+/**
+ * Read from the catalog, so adding a lesson does not edit this file: the last playable lesson (it
+ * has no next lesson) and the first lesson that is still coming soon (it has no page).
+ */
+const LAST_READY = readyEntries.at(-1)!;
+const FIRST_SOON = catalog.find((entry) => entry.status === 'soon')!;
 
 const stepTitle = (page: Page) => page.getByRole('heading', { level: 2 });
 // The step card also holds invisible copies of every step (to reserve its height), so the
@@ -46,7 +53,7 @@ test.describe('the catalog', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Frontend Pattern Lab' }),
     ).toBeVisible();
-    await expect(page.getByText('2 of 12 lessons are ready.')).toBeVisible();
+    await expect(page.getByText(`${readyEntries.length} of 12 lessons are ready.`)).toBeVisible();
 
     // One list in lesson order, numbered 1 to 12, not grouped by track.
     await expect(page.getByRole('list').filter({ has: page.getByRole('article') })).toHaveCount(1);
@@ -76,7 +83,9 @@ test.describe('the catalog', () => {
     await expect(card(page, 'Normalized Data')).toContainText('Data and state');
     await expect(card(page, 'Container, View, ViewModel')).toContainText('Structure');
     await expect(card(page, 'Errors and Observability')).toContainText('Product reliability');
-    await expect(page.getByText('Coming soon', { exact: true })).toHaveCount(10);
+    await expect(page.getByText('Coming soon', { exact: true })).toHaveCount(
+      12 - readyEntries.length,
+    );
 
     // The ready lessons are links, and the others are not.
     await expect(page.getByRole('link', { name: 'Optimistic UI' })).toHaveAttribute(
@@ -87,8 +96,12 @@ test.describe('the catalog', () => {
       'href',
       '/lessons/push-pull-sync/',
     );
-    await expect(page.getByRole('link', { name: 'Virtualization' })).toHaveCount(0);
-    await expect(card(page, 'Virtualization').getByText('Coming soon')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Virtualization' })).toHaveAttribute(
+      'href',
+      '/lessons/virtualization/',
+    );
+    await expect(page.getByRole('link', { name: FIRST_SOON.title })).toHaveCount(0);
+    await expect(card(page, FIRST_SOON.title).getByText('Coming soon')).toBeVisible();
     await expect(card(page, 'Optimistic UI').getByText('4 min')).toBeVisible();
     await expect(card(page, 'Push + Pull Sync').getByText('7 steps')).toBeVisible();
   });
@@ -222,8 +235,7 @@ test.describe('page metadata and crawler files', () => {
     const xml = await response.text();
     expect([...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])).toEqual([
       `${site}/`,
-      `${site}${LESSON_1}`,
-      `${site}${LESSON_2}`,
+      ...readyEntries.map((entry) => `${site}/lessons/${entry.slug}/`),
     ]);
     expect(xml).not.toContain('/dev/');
   });
@@ -363,13 +375,16 @@ test.describe('next-lesson navigation', () => {
   });
 
   test('the last lesson keeps "Restart lesson", and the arrow does nothing', async ({ page }) => {
-    await openLesson(page, `${LESSON_2}?step=7`);
+    const url = `/lessons/${LAST_READY.slug}/`;
+    await openLesson(page, url);
+    const firstTitle = await stepTitle(page).textContent();
+    await openLesson(page, `${url}?step=${LAST_READY.stepCount}`);
     const restart = page.getByRole('button', { name: 'Restart lesson ↺' });
     await expect(restart).toBeVisible();
     await page.keyboard.press('ArrowRight');
-    await expect(page).toHaveURL(`${LESSON_2}?step=7`);
+    await expect(page).toHaveURL(`${url}?step=${LAST_READY.stepCount}`);
     await restart.click();
-    await expect(stepTitle(page)).toHaveText('Load with a request');
+    await expect(stepTitle(page)).toHaveText(firstTitle!);
     await expect.poll(() => search(page)).toBe('');
   });
 
@@ -522,7 +537,7 @@ test.describe('the 404 page', () => {
   });
 
   test('answers a lesson that is only coming soon with 404', async ({ page }) => {
-    const response = await page.goto('/lessons/virtualization/');
+    const response = await page.goto(`/lessons/${FIRST_SOON.slug}/`);
     expect(response?.status()).toBe(404);
   });
 });

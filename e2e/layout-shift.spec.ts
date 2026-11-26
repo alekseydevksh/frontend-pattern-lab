@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { readyEntries } from '../content/lessons/catalog';
 import { waitForHydration } from './support';
 
 /**
  * "No layout shift while a lesson plays" (docs/SPEC.md, success criteria). Lighthouse measures
- * the page load only, so this plays every step of both lessons in real time, with the browser's
+ * the page load only, so this plays every step of every ready lesson in real time, with the browser's
  * own layout-shift observer running from before the page loads, and requires a total of exactly 0.
  *
  * Two totals are kept. The standard one ignores shifts within 500 ms of a key press or click, as
@@ -14,10 +15,12 @@ import { waitForHydration } from './support';
  * (0.00 to 0.01), where it was 0.06 to 0.08 before.
  */
 
-const lessons = [
-  { name: 'Optimistic UI', url: '/lessons/optimistic-ui/', steps: 6 },
-  { name: 'Push + Pull Sync', url: '/lessons/push-pull-sync/', steps: 7 },
-];
+/** Every ready lesson in the catalog, so a new lesson is covered the day it is added. */
+const lessons = readyEntries.map((entry) => ({
+  name: entry.title,
+  url: `/lessons/${entry.slug}/`,
+  steps: entry.stepCount,
+}));
 const viewports = [
   { name: 'desktop', width: 1280, height: 900 },
   { name: 'phone', width: 390, height: 844 },
