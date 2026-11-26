@@ -1,64 +1,44 @@
-import dynamic from 'next/dynamic';
-import { bindScene, type LessonViewProps } from '@/components/lesson/bindScene';
-import type { ComponentType } from 'react';
-import type { AnySceneDefinition } from '@/engine/types';
-
-/** What the registry holds for a scene id. */
-export interface SceneEntry {
-  /** Loads the scene definition, for validation and tests. Nothing on a page calls it. */
-  load: () => Promise<AnySceneDefinition>;
-  /**
-   * The lesson shell with this scene in it, loaded on demand. A lesson page renders the view of
-   * its own scene, so the browser downloads that scene's chunk and no other, and Next.js preloads
-   * the chunk in the page's HTML and draws the scene in the server HTML (D14).
-   */
-  View: ComponentType<LessonViewProps>;
-}
+/// <reference types="vite/types/import-meta.d.ts" />
+import type { LessonPageComponent } from '@/app/(site)/lessons/lessonPage';
+import type { AnyLesson, AnySceneDefinition } from '@/engine/types';
 
 /**
- * Maps a lesson's `sceneId` to its scene. Adding a lesson adds one entry here.
+ * The scene registry, for tests and tools: every lesson page, with the lesson and the scene it
+ * draws, and from those the scenes by `sceneId`. Nothing registers here by hand: a lesson's
+ * `page.tsx` under `src/app/(site)/lessons/<slug>/` is its registration, and this module reads them
+ * all (D16).
  *
- * Each entry names its scene file twice, with a literal `import()` each time: `next/dynamic` only
- * splits and preloads a chunk for an `import()` it can see written out in its own call, so `View`
- * cannot reuse `load`. Both calls name the same file, so there is still one chunk per scene.
- * `registry.test.ts` checks the two agree.
+ * The app never imports this module. A lesson page imports its own scene, so the browser gets that
+ * scene and no other, and no map of scenes ships to any page. `import.meta.glob` is Vite's, so this
+ * runs under Vitest and Storybook, not in the Next.js build, which fails loudly if it is ever
+ * imported there.
  */
-export const sceneRegistry: Readonly<Record<string, SceneEntry>> = {
-  'optimistic-ui': {
-    load: () => import('./OptimisticUiScene').then((m) => m.optimisticUiScene),
-    View: dynamic(() =>
-      import('./OptimisticUiScene').then((m) => ({ default: bindScene(m.optimisticUiScene) })),
-    ),
-  },
-  'push-pull-sync': {
-    load: () => import('./PushPullScene').then((m) => m.pushPullScene),
-    View: dynamic(() =>
-      import('./PushPullScene').then((m) => ({ default: bindScene(m.pushPullScene) })),
-    ),
-  },
-  virtualization: {
-    load: () => import('./VirtualizationScene').then((m) => m.virtualizationScene),
-    View: dynamic(() =>
-      import('./VirtualizationScene').then((m) => ({ default: bindScene(m.virtualizationScene) })),
-    ),
-  },
-};
 
-/** The entry for `sceneId`. Throws on an id that is not registered, which validation rules out. */
-export function sceneEntry(sceneId: string): SceneEntry {
-  const entry = Object.hasOwn(sceneRegistry, sceneId) ? sceneRegistry[sceneId] : undefined;
-  if (!entry) throw new Error(`No scene "${sceneId}" in the scene registry.`);
-  return entry;
+const pages = import.meta.glob<LessonPageComponent>('/src/app/\\(site\\)/lessons/*/page.tsx', {
+  eager: true,
+  import: 'default',
+});
+
+export interface LessonPageEntry {
+  /** The name of the page's folder, which is the lesson's address. */
+  folder: string;
+  lesson: AnyLesson;
+  scene: AnySceneDefinition;
 }
 
-/** The scene definition for `sceneId`. */
-export function loadScene(sceneId: string): Promise<AnySceneDefinition> {
-  return sceneEntry(sceneId).load();
-}
+/** Every lesson page, in lesson order. */
+export const lessonPages: readonly LessonPageEntry[] = Object.entries(pages)
+  .map(([path, page]) => ({
+    folder: path.split('/').at(-2) ?? '',
+    lesson: page.lesson,
+    scene: page.scene,
+  }))
+  .sort((a, b) => a.lesson.order - b.lesson.order);
 
-/** Every registered scene, by id. For tests and tools; a page never needs all of them. */
-export async function loadAllScenes(): Promise<Record<string, AnySceneDefinition>> {
-  const ids = Object.keys(sceneRegistry);
-  const loaded = await Promise.all(ids.map(loadScene));
-  return Object.fromEntries(ids.map((id, i) => [id, loaded[i]!]));
-}
+/** Every playable lesson, in lesson order. */
+export const lessons: readonly AnyLesson[] = lessonPages.map((page) => page.lesson);
+
+/** The scene each `sceneId` names, as the lesson pages pair them. */
+export const sceneRegistry: Readonly<Record<string, AnySceneDefinition>> = Object.fromEntries(
+  lessonPages.map((page) => [page.lesson.sceneId, page.scene]),
+);

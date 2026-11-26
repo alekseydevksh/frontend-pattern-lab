@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Track } from '@/engine/types';
 import { catalog, lessonNumber, nextLessonAfter, readyEntries } from './catalog';
-import { lessonLoaders, loadAllLessons, loadLesson } from './index';
-
-const lessons = await loadAllLessons();
+import { lessonPages, lessons } from '@/components/scenes/registry';
 /** The first lesson that is still coming soon. Derived, so a new lesson does not edit this test. */
 const firstSoon = catalog.find((e) => e.status === 'soon');
 
@@ -62,8 +60,9 @@ describe('content/lessons/catalog', () => {
     });
   });
 
-  it('has a loader for every ready entry and for no other lesson', () => {
-    expect(Object.keys(lessonLoaders).sort()).toEqual(readyEntries.map((e) => e.slug).sort());
+  it('has a lesson page for every ready entry and for no other lesson, in a folder named by its slug', () => {
+    expect(lessonPages.map((p) => p.folder).sort()).toEqual(readyEntries.map((e) => e.slug).sort());
+    for (const page of lessonPages) expect(page.lesson.slug, page.folder).toBe(page.folder);
   });
 
   it('has a ready entry for every registered lesson', () => {
@@ -113,13 +112,5 @@ describe('nextLessonAfter', () => {
 
   it('gives nothing for an unknown slug', () => {
     expect(nextLessonAfter('nope')).toBeNull();
-  });
-});
-
-describe('loadLesson', () => {
-  it('loads one lesson by slug, and nothing for a slug that has none', async () => {
-    expect((await loadLesson('push-pull-sync'))?.slug).toBe('push-pull-sync');
-    expect(await loadLesson(firstSoon?.slug ?? '')).toBeNull();
-    expect(await loadLesson('toString')).toBeNull();
   });
 });

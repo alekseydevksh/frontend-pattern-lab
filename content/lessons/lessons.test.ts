@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { loadAllScenes } from '@/components/scenes/registry';
+import { lessons, sceneRegistry as scenes } from '@/components/scenes/registry';
 import { validateLesson, validateLessons } from '@/engine/validate';
-import { loadAllLessons } from './index';
-
-const lessons = await loadAllLessons();
-const scenes = await loadAllScenes();
 
 /**
- * The content validation test. It runs over every lesson in the registry, so a mistake in
+ * The content validation test. It runs over every lesson page's lesson, with the scene that page
+ * draws (src/components/scenes/registry.ts), so a mistake in
  * lesson data (a repeated step id, a bad takeawayIndex, unsorted frames, a missing scene,
  * an unknown lane, an empty sceneAlt) fails the build. The rules themselves are tested,
  * with deliberately broken lessons, in src/engine/validate.test.ts.
