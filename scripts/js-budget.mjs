@@ -10,10 +10,12 @@
 // The routes are found in the export, not listed here: the catalog is `index.html`, and every
 // `lessons/<slug>/index.html` is a lesson page, so a new lesson is measured the day it is added.
 //
-// Two things fail the check:
+// Three things fail the check:
 //  1. a lesson page that loads more than LESSON_LIMIT of gzipped JavaScript (docs/SPEC.md, "Starting
 //     performance budget": under 150 KB);
-//  2. a lesson page with no JavaScript file of its own, when there are two or more lesson pages. A
+//  2. the catalog loading more than CATALOG_LIMIT (145 KB, set by the owner in M5: the framework alone
+//     is about 139 KB, so this catches the catalog starting to load lesson code; see D15);
+//  3. a lesson page with no JavaScript file of its own, when there are two or more lesson pages. A
 //     lesson's scene is loaded on demand (D14), so each page must load a file that no other lesson
 //     page loads; if none does, the scenes have been bundled together again, and every page pays
 //     for all of them.
@@ -25,6 +27,8 @@ const out = resolve(process.env.OUT_DIR ?? 'out');
 const KB = 1024;
 /** The most gzipped JavaScript a lesson page may load. */
 const LESSON_LIMIT = 150 * KB;
+/** The most gzipped JavaScript the catalog may load. */
+const CATALOG_LIMIT = 145 * KB;
 
 if (!existsSync(out)) {
   console.error(`No export found at ${out}. Run \`pnpm build\` first.`);
@@ -33,7 +37,7 @@ if (!existsSync(out)) {
 
 /** The routes of the export: the catalog, and one page for each folder in lessons/. */
 function routesOf(dir) {
-  const routes = [{ path: '/', file: 'index.html', label: 'catalog', limit: null }];
+  const routes = [{ path: '/', file: 'index.html', label: 'catalog', limit: CATALOG_LIMIT }];
   const lessonsDir = join(dir, 'lessons');
   const slugs = existsSync(lessonsDir)
     ? readdirSync(lessonsDir, { withFileTypes: true })
@@ -132,7 +136,7 @@ if (process.argv.includes('--json')) {
 } else {
   const kb = (bytes) => (bytes / KB).toFixed(1).padStart(6);
   for (const r of routes) {
-    const limit = r.limit === null ? 'no limit' : `limit ${(r.limit / KB).toFixed(0)} KB`;
+    const limit = `limit ${(r.limit / KB).toFixed(0)} KB`;
     const own = r.own ? `, ${kb(r.ownGzip)} KB of them its own (${r.own.length} files)` : '';
     console.log(
       `${r.path.padEnd(28)} ${kb(r.gzip)} KB gzipped JS in ${r.files.length} files${own} (${limit})` +

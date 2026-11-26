@@ -43,9 +43,10 @@ jobs:
       - name: Build (static export)
         run: pnpm build
 
-      # Fails the build if a lesson page loads more than 150 KB of gzipped JavaScript, or if the
-      # lessons' scenes are no longer split apart. Measured per route from the export built above.
-      - name: JavaScript budget (150 KB per lesson page)
+      # Fails the build if a lesson page loads more than 150 KB of gzipped JavaScript, the catalog more
+      # than 145 KB, or if the lessons' scenes are no longer split apart. Measured per route from the
+      # export built above.
+      - name: JavaScript budget (150 KB per lesson page, 145 KB catalog)
         run: pnpm budget
 
       - name: Build Storybook

@@ -76,6 +76,26 @@ describe('scripts/js-budget.mjs', () => {
     expect(out).not.toMatch(/FAIL: \/lessons\/alpha\//);
   });
 
+  it('fails a catalog over 145 KB, and passes one under it', () => {
+    const lessons = {
+      'lessons/alpha/index.html': ['_next/static/alpha.js'],
+      'lessons/beta/index.html': ['_next/static/beta.js'],
+    };
+    const files = { '_next/static/alpha.js': 1 * KB, '_next/static/beta.js': 1 * KB };
+    const under = exportOf(
+      { ...lessons, 'index.html': ['_next/static/catalog.js'] },
+      { ...files, '_next/static/catalog.js': 143 * KB },
+    );
+    expect(run(under).code).toBe(0);
+    const over = exportOf(
+      { ...lessons, 'index.html': ['_next/static/catalog.js'] },
+      { ...files, '_next/static/catalog.js': 147 * KB },
+    );
+    const { code, out } = run(over);
+    expect(code).toBe(1);
+    expect(out).toMatch(/FAIL: \/ loads 14\d\.\d KB .* over its 145 KB limit/);
+  });
+
   it('measures a lesson that is not listed anywhere: any folder in lessons/ is a lesson page', () => {
     const dir = exportOf(
       {
@@ -171,7 +191,7 @@ describe('scripts/js-budget.mjs', () => {
       '/lessons/beta/',
     ]);
     const [catalog, alpha] = report.routes;
-    expect(catalog.limit).toBeNull();
+    expect(catalog.limit).toBe(145 * KB);
     expect(alpha.limit).toBe(150 * KB);
     expect(alpha.ownFiles).toBe(1);
     expect(alpha.ownGzip).toBeGreaterThan(2 * KB - 100);
