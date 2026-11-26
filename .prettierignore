@@ -3,6 +3,7 @@ node_modules
 out
 coverage
 playwright-report
+storybook-static
 test-results
 pnpm-lock.yaml
 reference
