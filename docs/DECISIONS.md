@@ -133,7 +133,7 @@ text.**
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | Borders, lines, dots, fills, tints, packets, the large marks of a diagram            | `--req`, `--res`, `--ev`, `--bad`, `--muted`, `--line` (spec)                  |
 | Any text, however it is coloured: labels, values, status words, pills, metric values | `--ink`, `--muted-text`, `--req-text`, `--res-text`, `--ev-text`, `--bad-text` |
-| Text on a filled signal colour (toast, badge)                                        | `--on-signal`, added in M3 with the first scene that needs it                  |
+| Text on a filled signal colour (toast, badge, filled button)                         | `--on-signal`, on `--bad`, `--ev`, `--req-solid` or `--res-solid` (see D12)    |
 
 **Reason:** in the light theme the spec's signal colours reach only 3.2:1 to 4.3:1 as text on
 paper or panel, and WCAG AA asks for 4.5:1. Each `-text` token is the signal colour with 30%
@@ -236,3 +236,66 @@ No dependency was added in M2. Everything below is a choice the spec did not set
   running, so those tests pause the player first and resume the page clock.
 - **`testClock.ts` and `testLesson.ts` sit in `src/engine/`** because several test files share
   them. Only tests import them, so they are never in a bundle.
+
+## D12. Lessons 1 and 2, and the owner's answers to the M2 questions (2026-11-26)
+
+No dependency was added in M3. Owner answers, recorded:
+
+1. **`onPastEnd`.** `useLessonPlayer` takes an optional `onPastEnd` callback, called when the right
+   arrow is pressed on the last step. The Next button is not affected: the page owns it. Unit
+   tested. M3 passes none, so the arrow does nothing on the last step; M4 wires it to the next lesson.
+2. **Coming-soon stubs.** In M4 the catalog uses a separate `CatalogEntry` (`slug`, `title`,
+   `summary`, `track`, `status: 'ready' | 'soon'`). `Lesson` is for playable lessons only. The
+   `status` field and the coming-soon rules in `Lesson` and `validate.ts` (D11) go in M4. SPEC.md
+   describes the target now. SPEC.md in the repo is the living copy of the spec.
+3. **Two-lesson floor.** `content/lessons/lessons.test.ts` fails if fewer than two lessons are registered.
+4. **Verdict tables** (`Step.summary`) are drawn by the lesson shell, in place of the diagram.
+5. The three differences from the prototype that were proposed in M2 are accepted.
+
+Choices the spec did not settle:
+
+- **`--on-signal` and the solid fills.** Text on a filled signal colour is `--on-signal` (white in the
+  light theme, the dark paper colour in the dark theme). `--bad` and `--ev` reach 4.5:1 with it as
+  they are, in both themes. The light theme's `--req` (3.8:1) and `--res` (4.4:1) do not, so a fill
+  that carries text in those colours is `--req-solid` or `--res-solid`: the colour with 15% `--ink`
+  mixed in, which is 4.5:1 or better in both themes and close to the signal colour. Used on the
+  toast (`--bad`), the Like button and the pending badge (`--req-solid`). `contrast.test.ts` holds
+  every pair. Alternatives: white on the raw `--req` (fails AA), or a second text colour per fill.
+- **Scenes carry their labels in the state.** "BROWSER", "socket {status}", the document names and
+  the words of the metrics are fields of the scene state, set in `baseState` of the lesson, because
+  scenes may not hold visible text. Templates (`{label} · {ms} ms`) go through `format`. The metrics
+  the scene shows are `Metric` values in the state (scene 1) or computed from it (scene 2), so
+  nothing compares a displayed word such as "yes".
+- **`LessonShell` is a client component with a header slot.** The cards around the diagram all
+  depend on the player's state, so the shell runs `useLessonPlayer`. The static header (breadcrumb,
+  title, chips, summary) is `LessonHeader`, rendered by the page on the server and passed in as a
+  prop, so the text still ships as server HTML. The shell finds its scene in the registry, or takes one
+  as a prop (the dummy lesson is not in it).
+- **`Stepper` is split from `StepControls`.** The prototype puts the dots under the diagram and Back
+  and Next in the step card. `StepControls` is now Back, Next and the key hint, and takes `stepCount`.
+- **The verdict table is an HTML `<table>`**, not SVG: a screen reader can move through it by row,
+  and axe can measure its text. It has the diagram's aspect ratio and minimum width, so nothing moves
+  when the step changes. The step's `sceneAlt` describes it. It does not scale its text with the width,
+  as the prototype's SVG table did.
+- **Takeaways tick from the furthest step reached** and stay ticked on the way back, as in the
+  prototype. Each item also says "reached" or "not reached yet" to a screen reader, so the box is not
+  the only signal. Saved progress is M4.
+- **`shortTitle` keeps the prototype's meaning:** the step's own `short` is the label of the Next
+  button that leaves it, so it names the step that comes next. SPEC.md now says so.
+- **Routes.** `/lessons/[slug]` with `generateStaticParams` and `dynamicParams = false`, inside a
+  temporary frame (`src/app/lessons/LessonsFrame.tsx`: brand, a link per lesson, theme toggle, credit
+  line). M4 replaces the frame with the app shell. The breadcrumb's "of 2" counts the registry.
+- **Slugs and track.** The second lesson's slug is `push-pull-sync` (the prototype used `push-pull`).
+  Both lessons are in the track "Data and state", as the spec's table says; the prototype called it
+  "State and updates".
+- **`sceneAlt` sentences are new.** The prototype has none; they are written for this port.
+- **Parity is tested, not eyeballed.** `content/lessons/prototype-parity.test.ts` loads
+  `reference/prototype.html` in jsdom and compares text, tags, tones, step order, frame times, packets,
+  the scene state after every frame, metrics and the verdict tables with the port.
+- **e2e details.** A `waitForHydration` helper keeps key presses from racing the page load (the
+  player listens for keys only once hydrated; a dummy-lesson test failed once under load). The axe
+  helper also ignores axe's "too short to judge" verdict for single-character SVG text (the badge
+  digit); `contrast.test.ts` covers that pair. Axe runs on the final state of every step, using reduced
+  motion to reach it at once, plus once with a packet in flight.
+- **Numbers in diagrams** are labelled simulated by the footer line ("Latencies in the diagrams are
+  simulated.") and by step 1's text, as in the prototype. Open question for the owner: also in the diagram.
