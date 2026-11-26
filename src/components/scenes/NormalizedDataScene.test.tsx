@@ -89,6 +89,10 @@ describe('the normalized data scene', () => {
       { value: '0 of 3', tone: 'bad' },
       { value: '2', tone: 'bad' },
     ]);
+    // A view that has not rendered yet is blank, not stale: loading is not marked as a problem.
+    expect(
+      normalizedDataScene.metrics({ ...copies, names: [OLD, null, null], view: [OLD, null, null] }),
+    ).toEqual([{ value: '1' }, { value: '1 of 3' }, { value: '0' }]);
     expect(normalizedDataScene.metrics(entities)).toEqual([
       { value: '1', tone: 'good' },
       { value: '3 of 3', tone: 'good' },
