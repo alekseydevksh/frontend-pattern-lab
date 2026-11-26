@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Metric, SceneDefinition } from '@/engine/types';
 import { cx } from '@/lib/cx';
 import { format } from '@/lib/format';
@@ -80,6 +81,21 @@ function markerPlacement(ms: number) {
   return { x, anchor: edge, labelX: edge === 'start' ? -8 : edge === 'end' ? 8 : 0 } as const;
 }
 
+/** What a marker keeps showing while it fades out: where it was, and what it said. */
+interface MarkerLook {
+  x: number;
+  anchor: 'start' | 'middle' | 'end';
+  labelX: number;
+  label: string;
+}
+
+/**
+ * A marker on the time strip. As in the prototype, a marker that goes away fades out where it
+ * stands and keeps its text, instead of sliding to the edge with an empty label. What it shows
+ * while hidden is not visible, so the picture still depends only on the state; the marker keeps
+ * its last look only so the fade has something to fade. It is a presentation detail, recorded
+ * in D13. A marker that has never been shown waits at x = 0, as the prototype's does.
+ */
 function Marker({
   at,
   label,
@@ -91,26 +107,41 @@ function Marker({
   tone: 'req' | 'res';
   below: boolean;
 }) {
-  const place = at === null ? null : markerPlacement(at);
+  const [last, setLast] = useState<MarkerLook>({
+    x: 0,
+    anchor: 'middle',
+    labelX: 0,
+    label: '',
+  });
+  let look = last;
+  if (at !== null) {
+    const { x, anchor, labelX } = markerPlacement(at);
+    look = { x, anchor, labelX, label };
+    if (
+      look.x !== last.x ||
+      look.anchor !== last.anchor ||
+      look.labelX !== last.labelX ||
+      look.label !== last.label
+    ) {
+      setLast(look);
+    }
+  }
   return (
     <g
-      className="transition-[transform,opacity] duration-500 ease-in-out"
-      style={{
-        opacity: place ? 1 : 0,
-        transform: `translate(${place ? place.x : AXIS.x1}px, 0)`,
-      }}
+      className="transition-[transform,opacity] duration-[500ms,300ms] ease-[ease]"
+      style={{ opacity: at === null ? 0 : 1, transform: `translate(${look.x}px, 0)` }}
     >
       <circle cy={AXIS.y} r={6} className={tone === 'req' ? 'fill-req' : 'fill-res'} />
       <text
-        x={place?.labelX ?? 0}
+        x={look.labelX}
         y={below ? AXIS.y + 22 : AXIS.y - 16}
-        textAnchor={place?.anchor ?? 'middle'}
+        textAnchor={look.anchor}
         className={cx(
           'font-mono text-label font-medium',
           tone === 'req' ? 'fill-req-text' : 'fill-res-text',
         )}
       >
-        {label}
+        {look.label}
       </text>
     </g>
   );
