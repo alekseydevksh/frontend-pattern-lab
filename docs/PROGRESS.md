@@ -6,7 +6,7 @@ check, tests and build pass. Never tick on a guess.
 ## Milestones
 
 - [x] M0 Bootstrap
-- [ ] M1 Tokens, base UI and Storybook
+- [x] M1 Tokens, base UI and Storybook
 - [ ] M2 Lesson engine
 - [ ] M3 Port lessons 1 and 2
 - [ ] M4 App shell
@@ -18,6 +18,13 @@ check, tests and build pass. Never tick on a guess.
 - [x] `pnpm build` produces a static export
 - [x] CI is green on the empty app (run 45723540889 on main)
 - [x] The deploy URL loads (https://frontend-pattern-lab.vercel.app)
+
+### M1 acceptance criteria
+
+- [x] The theme toggle works (e2e: switches, sets `aria-pressed`, persists across reload)
+- [x] Both themes pass axe (e2e: component gallery and catalog, light and dark, plus system preference)
+- [x] Every component is operable by keyboard (e2e: Tab order, 2 px focus ring, Enter and Space)
+- [x] Every component has a story in both themes (7 `BothThemes` stories, guarded by a unit test)
 
 ## Lessons
 
