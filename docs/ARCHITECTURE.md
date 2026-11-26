@@ -1,7 +1,7 @@
 # Architecture
 
-> Filled in as the milestones land: the design system (M1) and the lesson engine (M2) are
-> described below; the lessons (M3) and the app shell (M4) come next. The full design is in
+> Filled in as the milestones land: the design system (M1), the lesson engine (M2) and the
+> first two lessons (M3) are described below; the app shell (M4) comes next. The full design is in
 > [SPEC.md](SPEC.md).
 
 ## Layout
@@ -9,20 +9,20 @@
 Lesson content, the playback engine and the scene drawings live in three separate places,
 so a new lesson never touches the engine.
 
-| Folder                   | Holds                                                               | Exists                      |
-| ------------------------ | ------------------------------------------------------------------- | --------------------------- |
-| `content/lessons/`       | Typed lesson data, one file per lesson, and the ordered registry    | M2 (registry), M3 (lessons) |
-| `content/dev/`           | The dummy lesson for the player test page. Not in the registry      | M2                          |
-| `src/engine/`            | Types, `useLessonPlayer`, timeline, packet helpers, validator       | M2                          |
-| `src/components/scenes/` | One pure SVG scene per lesson, and the registry                     | M2 (registry), M3 (scenes)  |
-| `src/components/ui/`     | Button, Pill, Chip, Card, and so on                                 | M1                          |
-| `src/components/lesson/` | Player controls, diagram stage, packet layer. Shell and cards later | M2 (player parts), M3/M4    |
-| `src/app/`               | App Router pages and layout, plus the two `/dev/` pages             | M0, gallery M1, player M2   |
-| `src/lib/`               | Theme logic, fonts, `format`, small helpers                         | M1, M2                      |
-| `src/styles/`            | Design tokens and global styles                                     | M1                          |
-| `.storybook/`            | Storybook configuration                                             | M1                          |
-| `messages/`              | Interface text (`en.json`)                                          | M0                          |
-| `e2e/`                   | Playwright tests                                                    | M0                          |
+| Folder                   | Holds                                                                 | Exists                                |
+| ------------------------ | --------------------------------------------------------------------- | ------------------------------------- |
+| `content/lessons/`       | Typed lesson data, one file per lesson, and the ordered registry      | M2 (registry), M3 (lessons)           |
+| `content/dev/`           | The dummy lesson for the player test page. Not in the registry        | M2                                    |
+| `src/engine/`            | Types, `useLessonPlayer`, timeline, packet helpers, validator         | M2                                    |
+| `src/components/scenes/` | One pure SVG scene per lesson, and the registry                       | M2 (registry), M3 (scenes)            |
+| `src/components/ui/`     | Button, Pill, Chip, Card, and so on                                   | M1                                    |
+| `src/components/lesson/` | Player parts, the lesson shell and the cards, tables and lists in it  | M2 (player parts), M3                 |
+| `src/app/`               | App Router pages and layout, the two `/dev/` pages, `/lessons/[slug]` | M0, gallery M1, player M2, lessons M3 |
+| `src/lib/`               | Theme logic, fonts, `format`, small helpers                           | M1, M2                                |
+| `src/styles/`            | Design tokens and global styles                                       | M1                                    |
+| `.storybook/`            | Storybook configuration                                               | M1                                    |
+| `messages/`              | Interface text (`en.json`)                                            | M0                                    |
+| `e2e/`                   | Playwright tests                                                      | M0                                    |
 
 ## Design system (M1)
 
@@ -131,7 +131,8 @@ a visitor with the preference gets the final state as soon as the page hydrates,
 the setting changes while the page is open.
 
 **Keys.** The hook listens on `document` (turn off with `keyboard: false`). Right and left
-arrows change step, `R` replays, Space pauses and resumes. Space is left alone when focus is on
+arrows change step, `R` replays, Space pauses and resumes. The right arrow on the last step calls
+the `onPastEnd` option, if there is one (the page decides what it means; M4 opens the next lesson). Space is left alone when focus is on
 a button, link or similar control (where it means "activate"), and nothing fires while typing
 in a field, with Ctrl, Meta or Alt held, for a held key's repeats, or for a key that another
 handler already took.
@@ -156,7 +157,7 @@ A scene is a `SceneDefinition<S>`: a `viewBox`, the `lanes` its packets can use,
 
 `validateLessons(lessons, scenes)` returns one message per problem. The test in
 `content/lessons/lessons.test.ts` runs it over every lesson in the registry, so a mistake in lesson
-data fails `pnpm test` and the build. It checks the six rules of the spec (repeated step ids, a
+data fails `pnpm test` and the build. It also fails if fewer than two lessons are registered. It checks the six rules of the spec (repeated step ids, a
 `takeawayIndex` out of range, frames not sorted by `at`, a `sceneId` missing from the scene
 registry, a packet on a lane the scene does not define, an empty `sceneAlt`) and a few more
 (D11). `src/engine/validate.test.ts` tests each rule with a deliberately broken lesson.
@@ -164,7 +165,7 @@ registry, a packet on a lane the scene does not define, an empty `sceneAlt`) and
 ## Player test page
 
 `/dev/player/` plays `content/dev/dummy-lesson.ts` with `components/scenes/dev/DummyScene.tsx`
-through the real hook and controls. Neither file is in a registry, so they never reach the
+through `LessonShell`, the same shell the real lessons use. Neither file is in a registry, so they never reach the
 catalog. `e2e/player.spec.ts` drives the page with the keyboard against a frozen clock, checks
 reduced motion, and runs axe in both themes. Like the component gallery, the page is `noindex`
 and part of the static export (D11).
@@ -183,4 +184,31 @@ and tested.
 | The clock is injectable                                         | `clock.ts`, `testClock.ts`                             |
 | Packets use Web Animations and clean up on a step change        | `packets.ts`, `PacketLayer`; unit tests                |
 | Keys                                                            | `keyboard.ts` and the hook; unit and e2e tests         |
-| Visited steps tick takeaways; progress in `localStorage`        | Not in M2: takeaways in M3, saved progress in M4       |
+| Visited steps tick takeaways                                    | `LessonShell` (furthest step reached); unit and e2e    |
+| Progress in `localStorage`                                      | Not yet: M4                                            |
+| A step with a summary shows a verdict table                     | `LessonShell`, `VerdictTable`; unit and e2e tests      |
+
+## Lessons (M3)
+
+Lessons 1 and 2 are ported from `reference/prototype.html`.
+
+| Lesson | Data                                | Scene                                     | Route                      |
+| ------ | ----------------------------------- | ----------------------------------------- | -------------------------- |
+| 1      | `content/lessons/optimistic-ui.ts`  | `components/scenes/OptimisticUiScene.tsx` | `/lessons/optimistic-ui/`  |
+| 2      | `content/lessons/push-pull-sync.ts` | `components/scenes/PushPullScene.tsx`     | `/lessons/push-pull-sync/` |
+
+**Scene state.** A scene exports its state type next to the drawing; the lesson file imports that
+type and nothing else from the scene. The state holds everything the scene says: its labels
+(`labels`, with `{name}` templates filled by `format`), the names in the diagram, and the fields the
+frames patch. The scene's `metrics` are fields of the state (lesson 1) or computed from it (lesson 2).
+
+**The page.** `src/app/lessons/[slug]/page.tsx` (server) finds the lesson, renders `LessonHeader`
+(breadcrumb, title, chips, summary) and passes it to `LessonShell` (client) as a prop. The shell runs
+`useLessonPlayer` and lays out the two columns of the prototype: the stage card (header, metrics,
+diagram, step counter with Replay and Pause, `Stepper`) and, beside it, the `StepCard` (with
+`StepControls` under its live region) and the `Takeaways` card. On a step with a `summary`, a
+`VerdictTable` takes the place of the diagram. `LessonsFrame` around it is temporary: M4 replaces it.
+
+**Parity with the prototype** is a test: `content/lessons/prototype-parity.test.ts` loads the
+prototype and compares text, step order, frame times, packets, the scene state after every frame,
+metrics and verdict tables. `e2e/lessons.spec.ts` plays both lessons with the keyboard.
