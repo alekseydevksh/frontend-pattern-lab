@@ -5,7 +5,9 @@
   },
   "home": {
     "heading": "Frontend Pattern Lab",
-    "placeholder": "Lessons are on their way."
+    "intro": "Short animated lessons on frontend architecture patterns for large React applications. Pick one, step through its diagram, and be done in about five minutes.",
+    "count": "{ready} of {total} lessons are ready. The rest are on their way.",
+    "title": "All lessons"
   },
   "theme": {
     "label": "Theme",
@@ -66,7 +68,8 @@
       "step": "step",
       "replay": "replay",
       "pause": "pause"
-    }
+    },
+    "nextLesson": "Next lesson: {title} →"
   },
   "playerTest": {
     "title": "Player test page",
@@ -82,11 +85,16 @@
     "takeawaysTitle": "You'll learn",
     "takeawayReached": "reached",
     "takeawayNotReached": "not reached yet",
-    "codeLabel": "Code example"
+    "codeLabel": "Code example",
+    "simulated": "Simulated"
   },
   "siteNav": {
     "brand": "Pattern Lab",
-    "label": "Lessons"
+    "label": "Main",
+    "lessons": "All lessons",
+    "source": "Source code",
+    "sourceUrl": "https://github.com/alekseydevksh/frontend-pattern-lab",
+    "skip": "Skip to the content"
   },
   "footer": {
     "intro": "Original explanations of ideas from",
@@ -95,6 +103,28 @@
     "by": "by Dmitrii Lobanov. The step-by-step diagram format is inspired by",
     "sampleName": "designed-to-scale.vercel.app",
     "sampleUrl": "https://designed-to-scale.vercel.app",
-    "simulated": "Latencies in the diagrams are simulated."
+    "simulated": "Latencies in the diagrams are simulated.",
+    "licenceCode": "Code under the",
+    "licenceCodeName": "MIT licence",
+    "licenceCodeUrl": "https://github.com/alekseydevksh/frontend-pattern-lab/blob/main/LICENSE",
+    "licenceContent": "Lesson text and diagrams under",
+    "licenceContentName": "CC BY 4.0",
+    "licenceContentUrl": "https://github.com/alekseydevksh/frontend-pattern-lab/blob/main/LICENSE-CONTENT.md",
+    "licenceFonts": "Fonts under the SIL Open Font Licence 1.1.",
+    "label": "About this site"
+  },
+  "catalog": {
+    "trackLabel": "{track} lessons",
+    "lessonNumber": "Lesson {number}",
+    "soon": "Coming soon",
+    "progressLabel": "Your progress",
+    "progressStarted": "Step {step} of {total}",
+    "progressCompleted": "Completed"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "heading": "This page is not here",
+    "body": "The address may be mistyped, or the lesson may not exist yet. Ten of the twelve lessons are still being written.",
+    "home": "See all lessons"
   }
 }
