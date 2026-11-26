@@ -14,6 +14,12 @@ export interface PlayerOptions {
   reducedMotion?: boolean;
   /** Listen for the arrow keys, R and Space on the document. Default true. */
   keyboard?: boolean;
+  /**
+   * Called when the right arrow is pressed on the last step, where `next` does nothing. The
+   * page decides what that means: open the next lesson, or nothing at all. It is not called
+   * for the Next button, which the page already owns.
+   */
+  onPastEnd?: () => void;
 }
 
 export interface LessonPlayer<S> {
@@ -132,7 +138,7 @@ export function useLessonPlayer<S>(
   scene: SceneDefinition<S>,
   options: PlayerOptions = {},
 ): LessonPlayer<S> {
-  const { clock = realClock, keyboard = true } = options;
+  const { clock = realClock, keyboard = true, onPastEnd } = options;
   const preferred = usePrefersReducedMotion();
   const reducedMotion = options.reducedMotion ?? preferred;
 
@@ -211,6 +217,7 @@ export function useLessonPlayer<S>(
   );
   const togglePause = useCallback(() => dispatch({ type: 'togglePause' }), []);
 
+  const onLastStep = stepIndex === playing.steps.length - 1;
   useEffect(() => {
     if (!keyboard) return;
     const commands = { next, back, replay, togglePause };
@@ -220,11 +227,12 @@ export function useLessonPlayer<S>(
       if (!command) return;
       // Space would scroll the page. The arrows and R have no default that we need to stop.
       if (command === 'togglePause') event.preventDefault();
-      commands[command]();
+      if (command === 'next' && onLastStep) onPastEnd?.();
+      else commands[command]();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [keyboard, next, back, replay, togglePause]);
+  }, [keyboard, next, back, replay, togglePause, onLastStep, onPastEnd]);
 
   const lanes = scene.lanes;
   const activePackets = useMemo(
