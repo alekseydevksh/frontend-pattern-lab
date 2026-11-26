@@ -137,7 +137,7 @@ frontend-pattern-lab/
 | --- | --- | --- |
 | `/` | Catalog of all lessons by track | Server component. Built from catalog entries; lessons that are not ready show as coming soon. |
 | `/lessons/[slug]` | One lesson | Pages are generated from the registry with `generateStaticParams`. |
-| `/lessons/[slug]?step=3` | A lesson opened at step 3 | Lets a single step be linked and shared. |
+| `/lessons/[slug]?step=3` | A lesson opened at step 3 | Lets a single step be linked and shared. Counts from 1, read after hydration; an out-of-range number is clamped, a non-number ignored; step 1 has no parameter (D13). |
 
 **Rendering split.** The catalog and the lesson shell render on the server. Only the player and the scene are client components, so the catalog ships almost no JavaScript.
 

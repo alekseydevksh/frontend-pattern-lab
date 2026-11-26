@@ -3,7 +3,7 @@
 Short animated lessons on frontend architecture patterns for large React applications.
 Each lesson teaches one idea that you step through as a diagram, in about five minutes.
 
-> **Status:** under construction. Milestones M0 (bootstrap), M1 (tokens, base UI and Storybook) and M2 (lesson engine) are done. See [docs/PROGRESS.md](docs/PROGRESS.md).
+> **Status:** under construction. Milestones M0 to M4 (bootstrap, tokens and base UI, the lesson engine, lessons 1 and 2, the app shell) are done. See [docs/PROGRESS.md](docs/PROGRESS.md).
 
 **Live site:** <https://frontend-pattern-lab.vercel.app>
 
@@ -28,6 +28,7 @@ pnpm format:check
 pnpm typecheck
 pnpm test         # unit tests (Vitest)
 pnpm build && pnpm test:e2e   # end-to-end tests (Playwright) need the export
+pnpm build && pnpm lighthouse # Lighthouse (mobile) on the catalog and a lesson, and the JS budget
 ```
 
 The first time, install the browser for Playwright with `pnpm exec playwright install chromium`.

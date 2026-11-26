@@ -1,28 +1,30 @@
 # Architecture
 
-> Filled in as the milestones land: the design system (M1), the lesson engine (M2) and the
-> first two lessons (M3) are described below; the app shell (M4) comes next. The full design is in
-> [SPEC.md](SPEC.md).
+> Filled in as the milestones land: the design system (M1), the lesson engine (M2), the first two
+> lessons (M3) and the app shell (M4) are described below. The full design is in [SPEC.md](SPEC.md).
 
 ## Layout
 
 Lesson content, the playback engine and the scene drawings live in three separate places,
 so a new lesson never touches the engine.
 
-| Folder                   | Holds                                                                 | Exists                                |
-| ------------------------ | --------------------------------------------------------------------- | ------------------------------------- |
-| `content/lessons/`       | Typed lesson data, one file per lesson, and the ordered registry      | M2 (registry), M3 (lessons)           |
-| `content/dev/`           | The dummy lesson for the player test page. Not in the registry        | M2                                    |
-| `src/engine/`            | Types, `useLessonPlayer`, timeline, packet helpers, validator         | M2                                    |
-| `src/components/scenes/` | One pure SVG scene per lesson, and the registry                       | M2 (registry), M3 (scenes)            |
-| `src/components/ui/`     | Button, Pill, Chip, Card, and so on                                   | M1                                    |
-| `src/components/lesson/` | Player parts, the lesson shell and the cards, tables and lists in it  | M2 (player parts), M3                 |
-| `src/app/`               | App Router pages and layout, the two `/dev/` pages, `/lessons/[slug]` | M0, gallery M1, player M2, lessons M3 |
-| `src/lib/`               | Theme logic, fonts, `format`, small helpers                           | M1, M2                                |
-| `src/styles/`            | Design tokens and global styles                                       | M1                                    |
-| `.storybook/`            | Storybook configuration                                               | M1                                    |
-| `messages/`              | Interface text (`en.json`)                                            | M0                                    |
-| `e2e/`                   | Playwright tests                                                      | M0                                    |
+| Folder                    | Holds                                                                 | Exists                              |
+| ------------------------- | --------------------------------------------------------------------- | ----------------------------------- |
+| `content/lessons/`        | Typed lesson data, the ordered registry, and the catalog of all 12    | M2 (registry), M3 (lessons), M4     |
+| `content/dev/`            | The dummy lesson for the player test page. Not in the registry        | M2                                  |
+| `src/engine/`             | Types, `useLessonPlayer`, timeline, packet helpers, validator         | M2                                  |
+| `src/components/scenes/`  | One pure SVG scene per lesson, and the registry                       | M2 (registry), M3 (scenes)          |
+| `src/components/ui/`      | Button, Pill, Chip, Card, and so on                                   | M1                                  |
+| `src/components/lesson/`  | Player parts, the lesson shell and the cards, tables and lists in it  | M2 (player parts), M3               |
+| `src/components/shell/`   | Site header, footer and the shell that wraps pages and the 404        | M4                                  |
+| `src/components/catalog/` | The lesson card and the saved-progress note                           | M4                                  |
+| `src/app/`                | Pages and layouts: `(site)` (catalog, lessons), 404, sitemap, `/dev/` | M0, gallery M1, player M2, shell M4 |
+| `src/lib/`                | Theme, saved progress, `?step=` parsing, metadata, fonts, `format`    | M1, M2, M4                          |
+| `scripts/`                | The static server, Lighthouse runner and the JavaScript budget check  | M0, M4                              |
+| `src/styles/`             | Design tokens and global styles                                       | M1                                  |
+| `.storybook/`             | Storybook configuration                                               | M1                                  |
+| `messages/`               | Interface text (`en.json`)                                            | M0                                  |
+| `e2e/`                    | Playwright tests                                                      | M0                                  |
 
 ## Design system (M1)
 
@@ -132,7 +134,7 @@ the setting changes while the page is open.
 
 **Keys.** The hook listens on `document` (turn off with `keyboard: false`). Right and left
 arrows change step, `R` replays, Space pauses and resumes. The right arrow on the last step calls
-the `onPastEnd` option, if there is one (the page decides what it means; M4 opens the next lesson). Space is left alone when focus is on
+the `onPastEnd` option, if there is one (the page decides what it means; the lesson page opens the next lesson). Space is left alone when focus is on
 a button, link or similar control (where it means "activate"), and nothing fires while typing
 in a field, with Ctrl, Meta or Alt held, for a held key's repeats, or for a key that another
 handler already took.
@@ -185,7 +187,7 @@ and tested.
 | Packets use Web Animations and clean up on a step change        | `packets.ts`, `PacketLayer`; unit tests                |
 | Keys                                                            | `keyboard.ts` and the hook; unit and e2e tests         |
 | Visited steps tick takeaways                                    | `LessonShell` (furthest step reached); unit and e2e    |
-| Progress in `localStorage`                                      | Not yet: M4                                            |
+| Progress in `localStorage`                                      | `lib/progress.ts`, saved by `LessonShell`; unit, e2e   |
 | A step with a summary shows a verdict table                     | `LessonShell`, `VerdictTable`; unit and e2e tests      |
 
 ## Lessons (M3)
@@ -202,13 +204,75 @@ type and nothing else from the scene. The state holds everything the scene says:
 (`labels`, with `{name}` templates filled by `format`), the names in the diagram, and the fields the
 frames patch. The scene's `metrics` are fields of the state (lesson 1) or computed from it (lesson 2).
 
-**The page.** `src/app/lessons/[slug]/page.tsx` (server) finds the lesson, renders `LessonHeader`
-(breadcrumb, title, chips, summary) and passes it to `LessonShell` (client) as a prop. The shell runs
-`useLessonPlayer` and lays out the two columns of the prototype: the stage card (header, metrics,
-diagram, step counter with Replay and Pause, `Stepper`) and, beside it, the `StepCard` (with
-`StepControls` under its live region) and the `Takeaways` card. On a step with a `summary`, a
-`VerdictTable` takes the place of the diagram. `LessonsFrame` around it is temporary: M4 replaces it.
+**The page.** `src/app/(site)/lessons/[slug]/page.tsx` (server) finds the lesson, renders `LessonHeader`
+(breadcrumb, title, chips, summary) and passes it to `LessonRoute` (client), which hands it to
+`LessonShell` as a prop. The shell runs `useLessonPlayer` and lays out the two columns of the
+prototype: the stage card (header, metrics with the "Simulated" pill, diagram, step counter with
+Replay and Pause, `Stepper`) and, beside it, the `StepCard` (with `StepControls` under its live
+region) and the `Takeaways` card. On a step with a `summary`, a `VerdictTable` takes the place of the
+diagram.
 
 **Parity with the prototype** is a test: `content/lessons/prototype-parity.test.ts` loads the
 prototype and compares text, step order, frame times, packets, the scene state after every frame,
 metrics and verdict tables. `e2e/lessons.spec.ts` plays both lessons with the keyboard.
+
+## App shell (M4)
+
+```text
+src/app/layout.tsx              <html>, fonts, theme script, metadataBase (the production URL)
+src/app/(site)/layout.tsx       SiteShell: skip link, header, content, footer
+src/app/(site)/page.tsx         the catalog, from content/lessons/catalog.ts
+src/app/(site)/lessons/[slug]/  the lesson page; LessonRoute adds the router
+src/app/not-found.tsx           the 404 page, wrapped in SiteShell itself
+src/app/dev/                    test pages with their own bare frames, outside the shell
+src/app/sitemap.ts, robots.ts   written once at build time
+```
+
+**Routes and the route group.** `(site)` is a route group: it adds a layout without adding a URL
+segment, so the catalog and the lessons share the header and footer while `/dev/` does not. The 404
+page sits outside every layout (Next.js renders it under the root layout only), so it wraps itself
+in `SiteShell`. Each page renders its own `<main id="main">`, which the skip link targets.
+
+**Static generation.** `pnpm build` prints every route as static: `/`, `/_not-found`, the two `/dev/`
+pages, `/lessons/[slug]` with one entry per registered lesson (`generateStaticParams`, with
+`dynamicParams = false`), `/robots.txt` and `/sitemap.xml`. Nothing reads the query string on the
+server, so one page per lesson serves every `?step=`.
+
+**The catalog.** `content/lessons/catalog.ts` has one `CatalogEntry` per lesson of the spec table, in
+order (the position is the lesson number). `status: 'ready'` means a `Lesson` with the same slug is
+in the registry; `status: 'soon'` means there is none, and the card says so and has no link.
+`catalog.test.ts` holds both lists, and the spec table, together. The page is a server component;
+its only client part is `ProgressNote` on each ready card.
+
+**Saved progress** (`lib/progress.ts`, `lib/useProgress.ts`). One `localStorage` key, `pl-progress`,
+holds `{ v: 1, lessons: { [slug]: { step, ticked, completed } } }`: the furthest step reached
+(from 0), the takeaways ticked, and whether the last step has been reached. The functions are
+plain and take the storage as a parameter. Every access is in try/catch and everything read back is
+validated, so blocked, full or corrupt storage means "nothing saved", never an error. Progress only
+moves forward. `useProgress()` is a `useSyncExternalStore` whose server snapshot is "nothing", so the
+server HTML and the first client render are the same, and the saved value arrives after hydration. It
+follows the `storage` event (other tabs) and a custom event (this tab). `ProgressNote` holds its
+height while empty, so the card does not grow when progress arrives.
+
+**Deep links** (`lib/stepParam.ts`, `components/lesson/useStepInUrl.ts`). `?step=N` counts from 1. After
+hydration the shell reads it and calls `goTo`; a whole number outside the lesson is clamped, anything
+else (`abc`, `2.5`, empty) is ignored. As the learner moves, the address is rewritten with
+`history.replaceState`, so stepping adds no history entries. Step 1 has no parameter. The server
+HTML is always step 1, and a deep link jumps a moment after first paint.
+
+**Next lesson.** `nextLessonAfter(slug)` gives the next _playable_ lesson. `LessonRoute` turns it
+into the shell's `nextLesson` prop with the router, so the shell never imports Next.js (it is also
+used in Storybook and in unit tests). On the last step the button reads "Next lesson: <title> →"
+and the right arrow does the same, through `onPastEnd`. With no next lesson the button is "Restart
+lesson" and the arrow does nothing.
+
+**Metadata.** `lib/metadata.ts` builds a page's title, description, canonical path and the complete
+Open Graph set (Next.js replaces a parent's `openGraph` whole, so each page carries all of it).
+`metadataBase` in the root layout makes them absolute on `https://frontend-pattern-lab.vercel.app`.
+Canonical paths end in a slash, as the export serves them, and never carry a query string.
+
+**Performance checks.** `pnpm lighthouse` runs Lighthouse CI (`lighthouserc.cjs`) against `out/` on
+the mobile profile, five runs per page, asserting the median of each metric, then runs
+`scripts/js-budget.mjs`, which gzips the scripts each page loads (ignoring Next.js's `nomodule`
+polyfill, which no current browser fetches). `e2e/layout-shift.spec.ts` plays every step of both
+lessons and requires a layout-shift total of 0. CI runs `pnpm lighthouse` after the end-to-end tests.
