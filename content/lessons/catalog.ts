@@ -52,7 +52,9 @@ export const catalog: readonly CatalogRow[] = [
     title: 'Normalized Data',
     summary: 'Store each thing once, by id, so one change reaches every screen that shows it.',
     track: 'Data and state',
-    status: 'soon',
+    status: 'ready',
+    minutes: 5,
+    stepCount: 6,
   },
   {
     slug: 'rendering-isolation',
