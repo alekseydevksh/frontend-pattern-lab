@@ -81,11 +81,22 @@ Not a lesson: the five things the owner asked for before lesson 3 (D14).
       passes with one recorded difference
 - [x] The catalog is one list in lesson order, numbered 1 to 12, with the track as a label on each card
 
+### Lesson 3 acceptance criteria
+
+- [x] Content validation passes (`pnpm test`: `content/lessons/lessons.test.ts` and the catalog test)
+- [x] The end-to-end test plays it from the first step to the last with the keyboard, and checks the metrics
+      and the verdict table (`e2e/lesson-03-virtualization.spec.ts`)
+- [x] axe is clean in both themes, on the final state of every step and with a packet in flight
+- [x] Checked at desktop (1280 px) and phone width (375 and 390 px): no layout shift, the step card keeps its
+      height, the metric labels fit, the page never scrolls sideways; screenshots of every step in both themes
+- [x] Lesson page JavaScript 149.3 KB gzipped (limit 150 KB); catalog 139.2 KB (limit 145 KB)
+- [ ] The owner checks the look (owner checkpoint: the style of the new scenes)
+
 ## Lessons
 
 - [x] 1. Optimistic UI
 - [x] 2. Push + Pull Sync
-- [ ] 3. Virtualization
+- [x] 3. Virtualization
 - [ ] 4. Normalized Data
 - [ ] 5. Rendering Isolation
 - [ ] 6. State Ownership

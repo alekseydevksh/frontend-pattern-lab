@@ -56,6 +56,7 @@ Spec: docs/SPEC.md. Visual reference: reference/prototype.html (not shipped).
 - On "go ahead with M2" (or any later milestone): first check that the previous pull
   request is merged, pull main, and only then create the next branch. If it is not
   merged, tell the owner and wait.
+- On "go ahead with lesson N": follow the "New lesson procedure" in docs/ADDING_A_LESSON.md.
 
 ## Ask the owner before
 
