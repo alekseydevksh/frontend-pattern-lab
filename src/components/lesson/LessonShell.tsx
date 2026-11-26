@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { scenes } from '@/components/scenes/registry';
 import { Card, Pill } from '@/components/ui';
 import type { AnyLesson, AnySceneDefinition } from '@/engine/types';
 import { useLessonPlayer } from '@/engine/useLessonPlayer';
@@ -22,8 +21,11 @@ import { VerdictTable } from './VerdictTable';
 
 export interface LessonShellProps {
   lesson: AnyLesson;
-  /** The scene to draw. Defaults to the one in the scene registry for `lesson.sceneId`. */
-  scene?: AnySceneDefinition;
+  /**
+   * The scene to draw: the one the scene registry holds for `lesson.sceneId`. The page loads it
+   * (the shell does not import the registry), so a page carries only its own lesson's scene.
+   */
+  scene: AnySceneDefinition;
   /** The lesson's heading, breadcrumb and chips, rendered by the page (see `LessonHeader`). */
   header: ReactNode;
   /**
@@ -46,15 +48,7 @@ export interface LessonShellProps {
  * It also keeps the address (`?step=N`) and the saved progress (`localStorage`) in step with the
  * player. Both are applied after hydration, so the server HTML is always the plain first step.
  */
-export function LessonShell({
-  lesson,
-  scene: sceneOverride,
-  header,
-  nextLesson,
-}: LessonShellProps) {
-  const scene = sceneOverride ?? scenes[lesson.sceneId];
-  if (!scene) throw new Error(`Lesson "${lesson.slug}" has no scene "${lesson.sceneId}".`);
-
+export function LessonShell({ lesson, scene, header, nextLesson }: LessonShellProps) {
   const player = useLessonPlayer(lesson, scene, { onPastEnd: nextLesson?.onOpen });
   const { step, stepIndex, stepCount } = player;
   const isLast = stepIndex === stepCount - 1;

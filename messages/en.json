@@ -114,7 +114,7 @@
     "label": "About this site"
   },
   "catalog": {
-    "trackLabel": "{track} lessons",
+    "track": "Track",
     "lessonNumber": "Lesson {number}",
     "soon": "Coming soon",
     "progressLabel": "Your progress",

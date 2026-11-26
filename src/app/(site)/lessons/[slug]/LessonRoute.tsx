@@ -2,7 +2,7 @@
 
 import { useMemo, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { LessonShell } from '@/components/lesson/LessonShell';
+import { sceneEntry } from '@/components/scenes/registry';
 import type { AnyLesson } from '@/engine/types';
 
 /**
@@ -25,5 +25,7 @@ export function LessonRoute({
     () => (next ? { title: next.title, onOpen: () => router.push(next.href) } : undefined),
     [next, router],
   );
-  return <LessonShell lesson={lesson} header={header} nextLesson={nextLesson} />;
+  // The view of this lesson's scene: the shell with the scene loaded on demand (see the registry).
+  const { View } = sceneEntry(lesson.sceneId);
+  return <View lesson={lesson} header={header} nextLesson={nextLesson} />;
 }

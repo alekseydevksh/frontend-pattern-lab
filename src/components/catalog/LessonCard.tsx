@@ -13,6 +13,8 @@ export interface LessonCardProps {
   slug: string;
   title: string;
   summary: string;
+  /** The lesson's track, shown as a label on the card. */
+  track: string;
   /** Present only for a lesson that can be played. Without it the card says "coming soon". */
   playable?: { minutes: number; stepCount: number };
 }
@@ -23,7 +25,7 @@ export interface LessonCardProps {
  * ready has no link, and says so in words. Server component: the only client part is
  * `ProgressNote`, which fills in saved progress after hydration.
  */
-export function LessonCard({ number, slug, title, summary, playable }: LessonCardProps) {
+export function LessonCard({ number, slug, title, summary, track, playable }: LessonCardProps) {
   const label = String(number).padStart(2, '0');
   return (
     <Card
@@ -60,15 +62,19 @@ export function LessonCard({ number, slug, title, summary, playable }: LessonCar
         )}
       </h3>
       <p className="text-muted-text">{summary}</p>
-      {playable && (
-        <>
-          <div className="mt-auto flex flex-wrap gap-2 pt-1">
+      <div className="mt-auto flex flex-wrap gap-2 pt-1">
+        <Chip>
+          <span className="sr-only">{text.track}: </span>
+          {track}
+        </Chip>
+        {playable && (
+          <>
             <Chip>{format(messages.lesson.minutes, { minutes: playable.minutes })}</Chip>
             <Chip>{format(messages.lesson.stepCount, { count: playable.stepCount })}</Chip>
-          </div>
-          <ProgressNote slug={slug} stepCount={playable.stepCount} />
-        </>
-      )}
+          </>
+        )}
+      </div>
+      {playable && <ProgressNote slug={slug} stepCount={playable.stepCount} />}
     </Card>
   );
 }

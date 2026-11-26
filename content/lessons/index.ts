@@ -1,19 +1,28 @@
 import type { AnyLesson } from '@/engine/types';
-import { optimisticUi } from './optimistic-ui';
-import { pushPullSync } from './push-pull-sync';
+import { readyEntries } from './catalog';
+
+/** Loads one lesson's data. A lesson's file is read only when something asks for that lesson. */
+export type LessonLoader = () => Promise<AnyLesson>;
 
 /**
- * The ordered registry of playable lessons. Adding a lesson adds one import and one entry
- * here, at its position, and flips its catalog entry to `ready` in catalog.ts. A lesson that is
- * not ready has only a catalog entry, never a Lesson (see D12 in docs/DECISIONS.md).
+ * The registry of playable lessons: a slug and a loader. Adding a lesson adds one line here, and
+ * flips its catalog entry to `ready` in catalog.ts. A lesson page loads its own lesson and no
+ * other, and the catalog loads none (see D14 in docs/DECISIONS.md). A lesson that is not ready
+ * has only a catalog entry, never a Lesson (D12).
  */
-export const lessons: readonly AnyLesson[] = [optimisticUi, pushPullSync];
+export const lessonLoaders: Readonly<Record<string, LessonLoader>> = {
+  'optimistic-ui': () => import('./optimistic-ui').then((m) => m.optimisticUi),
+  'push-pull-sync': () => import('./push-pull-sync').then((m) => m.pushPullSync),
+};
 
-/**
- * The playable lesson that follows `slug`, or null on the last one. A lesson that is only a
- * catalog entry ("coming soon") is never the next lesson, because there is nothing to open.
- */
-export function nextLessonAfter(slug: string): AnyLesson | null {
-  const index = lessons.findIndex((lesson) => lesson.slug === slug);
-  return index === -1 ? null : (lessons[index + 1] ?? null);
+/** The lesson for `slug`, or null if there is no playable lesson with that slug. */
+export async function loadLesson(slug: string): Promise<AnyLesson | null> {
+  const load = Object.hasOwn(lessonLoaders, slug) ? lessonLoaders[slug] : undefined;
+  return load ? load() : null;
+}
+
+/** Every playable lesson, in lesson order. For tests and tools; no page needs all of them. */
+export async function loadAllLessons(): Promise<AnyLesson[]> {
+  const lessons = await Promise.all(readyEntries.map((entry) => loadLesson(entry.slug)));
+  return lessons.filter((lesson): lesson is AnyLesson => lesson !== null);
 }

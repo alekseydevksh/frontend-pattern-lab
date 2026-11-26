@@ -11,6 +11,7 @@ const meta = {
     title: 'Optimistic UI',
     summary:
       'Update the screen first, confirm with the server second, and undo cleanly when the server says no.',
+    track: 'Data and state',
     playable: { minutes: 4, stepCount: 6 },
   },
   decorators: [
@@ -24,7 +25,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'One lesson in the catalog. A ready lesson is a link (the title, stretched over the card) with its length and saved progress; a lesson that is not ready has no link and says "Coming soon" in words, in a dashed card.',
+          'One lesson in the catalog. A ready lesson is a link (the title, stretched over the card) with its track, length and saved progress; a lesson that is not ready has no link and says "Coming soon" in words, in a dashed card. Every card carries its track as a label.',
       },
     },
   },
@@ -41,6 +42,7 @@ export const ComingSoon: Story = {
     title: 'Virtualization',
     summary:
       'Render only the rows a reader can see, and keep the scrollbar honest while the list stays long.',
+    track: 'Rendering and performance',
     playable: undefined,
   },
 };
@@ -56,6 +58,7 @@ export const BothThemes: Story = {
           slug="virtualization"
           title="Virtualization"
           summary="Render only the rows a reader can see, and keep the scrollbar honest while the list stays long."
+          track="Rendering and performance"
         />
       </div>
     </ThemePair>
