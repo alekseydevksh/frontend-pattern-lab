@@ -3,7 +3,7 @@
 Short animated lessons on frontend architecture patterns for large React applications.
 Each lesson teaches one idea that you step through as a diagram, in about five minutes.
 
-> **Status:** under construction. Milestone M0 (bootstrap) only. See [docs/PROGRESS.md](docs/PROGRESS.md).
+> **Status:** under construction. Milestones M0 (bootstrap) and M1 (tokens, base UI and Storybook). See [docs/PROGRESS.md](docs/PROGRESS.md).
 
 **Live site:** <https://frontend-pattern-lab.vercel.app>
 
@@ -16,6 +16,8 @@ pnpm install
 pnpm dev          # development server
 pnpm build        # static export to out/
 pnpm start        # serve out/ on http://localhost:3000
+pnpm storybook    # component catalogue on http://localhost:6006, with a light/dark switch
+pnpm build-storybook   # static Storybook build to storybook-static/
 ```
 
 ## Check it

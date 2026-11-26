@@ -5,7 +5,7 @@ Spec: docs/SPEC.md. Visual reference: reference/prototype.html (not shipped).
 
 ## Commands
 
-- pnpm dev | build | lint | typecheck | test | test:e2e | format
+- pnpm dev | build | lint | typecheck | test | test:e2e | format | storybook | build-storybook
 - Before every commit: pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ## Architecture rules
