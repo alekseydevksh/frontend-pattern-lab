@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { expectNoAxeViolations, storeTheme } from './support';
+import { expectNoAxeViolations, storeTheme, waitForHydration } from './support';
 
 /**
  * Plays the dummy lesson on the player test page, using only the keyboard to drive it.
@@ -38,6 +38,7 @@ test.describe('the player test page', () => {
   }) => {
     await freezeClock(page);
     await page.goto(PAGE);
+    await waitForHydration(page);
 
     // First paint: the start state is all there, with no timer having run.
     await expect(stepTitle(page)).toHaveText('A message goes out');
@@ -114,6 +115,7 @@ test.describe('the player test page', () => {
   test('Space pauses and resumes, and each frame still runs exactly once', async ({ page }) => {
     await freezeClock(page);
     await page.goto(PAGE);
+    await waitForHydration(page);
 
     await page.clock.runFor(250);
     await expect(text(page, 'Waiting for an answer')).toBeVisible();
@@ -147,6 +149,7 @@ test.describe('the player test page', () => {
   test('R replays the step from its start state, also while paused', async ({ page }) => {
     await freezeClock(page);
     await page.goto(PAGE);
+    await waitForHydration(page);
 
     await page.clock.runFor(1200);
     await expect(text(page, 'received')).toBeVisible();
@@ -175,6 +178,7 @@ test.describe('the player test page', () => {
   }) => {
     await freezeClock(page);
     await page.goto(PAGE);
+    await waitForHydration(page);
 
     const order = [
       'Toggle dark theme',
@@ -232,6 +236,7 @@ test.describe('the player test page', () => {
 
   test('announces the step in a polite live region, without the controls', async ({ page }) => {
     await page.goto(PAGE);
+    await waitForHydration(page);
     const live = page.locator('[aria-live="polite"]');
     await expect(live).toHaveCount(1);
     await expect(live).toContainText('A message goes out');
@@ -240,6 +245,7 @@ test.describe('the player test page', () => {
 
   test('the diagram is an image whose text alternative follows the step', async ({ page }) => {
     await page.goto(PAGE);
+    await waitForHydration(page);
     const labels: string[] = [];
     for (let i = 0; i < 4; i += 1) {
       labels.push((await diagram(page).getAttribute('aria-label')) ?? '');
@@ -257,6 +263,7 @@ test.describe('reduced motion', () => {
     page,
   }) => {
     await page.goto(PAGE);
+    await waitForHydration(page);
 
     await expect(text(page, 'Answer received')).toBeVisible();
     await expect(metric(page, 'answered')).toBeVisible();
@@ -301,6 +308,7 @@ for (const theme of ['light', 'dark'] as const) {
     test('the start state has no axe violations', async ({ page }) => {
       await freezeClock(page);
       await page.goto(PAGE);
+      await waitForHydration(page);
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       await page.keyboard.press('Space');
       await page.clock.resume();
@@ -311,6 +319,7 @@ for (const theme of ['light', 'dark'] as const) {
     test('a packet in flight has no axe violations', async ({ page }) => {
       await freezeClock(page);
       await page.goto(PAGE);
+      await waitForHydration(page);
       await page.clock.runFor(300);
       expect(await packetCount(page, 'ping')).toBe(1);
       await page.keyboard.press('Space');
@@ -322,6 +331,7 @@ for (const theme of ['light', 'dark'] as const) {
 
     test('the last step has no axe violations', async ({ page }) => {
       await page.goto(PAGE);
+      await waitForHydration(page);
       for (let i = 0; i < 3; i += 1) await page.keyboard.press('ArrowRight');
       await expect(stepTitle(page)).toHaveText('That is the whole test');
       await expectNoAxeViolations(page);

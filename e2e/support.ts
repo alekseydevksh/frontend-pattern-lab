@@ -7,6 +7,19 @@ export async function storeTheme(page: Page, theme: string) {
 }
 
 /**
+ * Waits until React has hydrated the page's buttons. Key presses before that go nowhere,
+ * because the player attaches its key listener when it hydrates; under load that can be a
+ * moment after the page's load event. React marks every element it manages with a
+ * `__reactProps$...` property, which is what this looks for.
+ */
+export async function waitForHydration(page: Page) {
+  await page.waitForFunction(() => {
+    const button = document.querySelector('main button');
+    return !!button && Object.keys(button).some((key) => key.startsWith('__reactProps'));
+  });
+}
+
+/**
  * Runs axe with every WCAG A and AA rule it knows, plus its best practices. The faint page
  * grid is a background image, which makes axe skip the contrast check for text above it, so
  * it is switched off for the run: contrast is then measured against the plain paper colour.
@@ -40,14 +53,15 @@ export async function expectNoAxeViolations(page: Page) {
     .flatMap((rule) => rule.nodes)
     .filter((node) => !node.any.some((check) => check.data?.messageKey === 'nonBmp'))
     // Text inside an SVG scene sits on shapes (bgOverlap) or straight on the image (imgNode),
-    // so axe cannot work out its background. Scenes only use token colours on paper or panel;
-    // src/styles/contrast.test.ts checks those.
+    // so axe cannot work out its background, and it will not judge a single character such
+    // as the digit in a badge (shortTextContent). Scenes only use token colours on paper,
+    // panel or a filled signal colour (--on-signal); src/styles/contrast.test.ts checks those.
     .filter(
       (node) =>
         !(
           node.html.startsWith('<text') &&
           node.any.some((check) =>
-            ['bgOverlap', 'imgNode'].includes(String(check.data?.messageKey)),
+            ['bgOverlap', 'imgNode', 'shortTextContent'].includes(String(check.data?.messageKey)),
           )
         ),
     )
