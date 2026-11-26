@@ -1,16 +1,16 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import messages from '@messages/en.json';
-import { lessons } from '@content/lessons';
+import { catalog } from '@content/lessons/catalog';
+import { lessons, nextLessonAfter } from '@content/lessons';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
-import { LessonShell } from '@/components/lesson/LessonShell';
-import { LessonsFrame } from '../LessonsFrame';
+import { MAIN_ID } from '@/components/shell/SiteShell';
+import { pageMetadata } from '@/lib/metadata';
+import { LessonRoute } from './LessonRoute';
 
 /**
- * A lesson page. Temporary in M3: it plays the lesson and nothing else. M4 adds the catalog,
- * `?step=` deep links, saved progress, next-lesson navigation and full page metadata. The
- * header text is rendered here, on the server, and handed to the shell, which is the client
- * part that runs the player.
+ * A lesson page, generated at build time for each lesson in the registry. The header text is
+ * rendered here, on the server, and handed to the client part that runs the player.
+ * `?step=N` is read in the browser (see useStepInUrl), so one static page serves every step.
  */
 export const dynamicParams = false;
 
@@ -24,7 +24,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const lesson = lessons.find((l) => l.slug === slug);
   return lesson
-    ? { title: `${lesson.title} · ${messages.site.name}`, description: lesson.summary }
+    ? pageMetadata({
+        title: lesson.title,
+        description: lesson.summary,
+        path: `/lessons/${lesson.slug}/`,
+      })
     : {};
 }
 
@@ -32,13 +36,15 @@ export default async function LessonPage({ params }: Props) {
   const { slug } = await params;
   const lesson = lessons.find((l) => l.slug === slug);
   if (!lesson) notFound();
+  const next = nextLessonAfter(slug);
   return (
-    <LessonsFrame current={slug}>
-      <LessonShell
+    <main id={MAIN_ID} className="mx-auto max-w-[1240px] px-4">
+      <LessonRoute
         key={slug}
         lesson={lesson}
-        header={<LessonHeader lesson={lesson} lessonCount={lessons.length} />}
+        header={<LessonHeader lesson={lesson} lessonCount={catalog.length} />}
+        next={next ? { title: next.title, href: `/lessons/${next.slug}/` } : null}
       />
-    </LessonsFrame>
+    </main>
   );
 }
