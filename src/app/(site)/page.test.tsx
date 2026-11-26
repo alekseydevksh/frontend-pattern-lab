@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { catalog } from '@content/lessons/catalog';
+import { catalog, readyEntries } from '@content/lessons/catalog';
 import CatalogPage, { metadata } from './page';
 
 describe('CatalogPage', () => {
@@ -18,8 +18,9 @@ describe('CatalogPage', () => {
     expect(screen.getByRole('link', { name: 'Optimistic UI' }).getAttribute('href')).toBe(
       '/lessons/optimistic-ui',
     );
-    expect(screen.getAllByText('Coming soon')).toHaveLength(10);
-    expect(screen.queryByRole('link', { name: 'Virtualization' })).toBeNull();
+    expect(screen.getAllByText('Coming soon')).toHaveLength(12 - readyEntries.length);
+    const firstSoon = catalog.find((entry) => entry.status === 'soon')!;
+    expect(screen.queryByRole('link', { name: firstSoon.title })).toBeNull();
   });
 
   it('is one list in lesson order, numbered 1 to 12 without a gap', () => {
@@ -68,7 +69,11 @@ describe('CatalogPage', () => {
 
   it('says how many lessons are ready', () => {
     render(<CatalogPage />);
-    expect(screen.getByText('2 of 12 lessons are ready. The rest are on their way.')).toBeTruthy();
+    expect(
+      screen.getByText(
+        `${readyEntries.length} of 12 lessons are ready. The rest are on their way.`,
+      ),
+    ).toBeTruthy();
   });
 
   it('has its own title, description and canonical address', () => {

@@ -4,6 +4,8 @@ import { catalog, lessonNumber, nextLessonAfter, readyEntries } from './catalog'
 import { lessonLoaders, loadAllLessons, loadLesson } from './index';
 
 const lessons = await loadAllLessons();
+/** The first lesson that is still coming soon. Derived, so a new lesson does not edit this test. */
+const firstSoon = catalog.find((e) => e.status === 'soon');
 
 const tracks: Track[] = [
   'Data and state',
@@ -73,7 +75,13 @@ describe('content/lessons/catalog', () => {
   });
 
   it('lists the ready entries in lesson order', () => {
-    expect(readyEntries.map((e) => e.slug)).toEqual(['optimistic-ui', 'push-pull-sync']);
+    const numbers = readyEntries.map((e) => lessonNumber(e.slug));
+    expect(numbers).toEqual([...numbers].sort((a, b) => (a ?? 0) - (b ?? 0)));
+    expect(readyEntries.slice(0, 3).map((e) => e.slug)).toEqual([
+      'optimistic-ui',
+      'push-pull-sync',
+      'virtualization',
+    ]);
   });
 
   it('numbers lessons by their place in the catalog', () => {
@@ -97,7 +105,10 @@ describe('nextLessonAfter', () => {
   });
 
   it('never gives a coming-soon lesson', () => {
-    expect(nextLessonAfter('virtualization')).toBeNull();
+    expect(firstSoon).toBeDefined();
+    expect(nextLessonAfter(firstSoon?.slug ?? '')).toBeNull();
+    for (const entry of readyEntries)
+      expect(nextLessonAfter(entry.slug)?.status ?? 'ready').toBe('ready');
   });
 
   it('gives nothing for an unknown slug', () => {
@@ -108,7 +119,7 @@ describe('nextLessonAfter', () => {
 describe('loadLesson', () => {
   it('loads one lesson by slug, and nothing for a slug that has none', async () => {
     expect((await loadLesson('push-pull-sync'))?.slug).toBe('push-pull-sync');
-    expect(await loadLesson('virtualization')).toBeNull();
+    expect(await loadLesson(firstSoon?.slug ?? '')).toBeNull();
     expect(await loadLesson('toString')).toBeNull();
   });
 });
