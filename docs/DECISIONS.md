@@ -416,3 +416,102 @@ with Playwright (no real Lighthouse score). It adds about 240 packages to the lo
   query) was added because the missing `/favicon.ico` was a 404 and a console error on every page load,
   which cost best practices 4 points (96 to 100). Hard-coded hex values are in the SVG because a favicon
   cannot read the page's CSS variables; they are the token values. Social preview images are still M6.
+
+## D14. M5 preparation, and the owner's answers to the M4 questions (2026-11-26)
+
+No dependency was added: `next/dynamic` is part of `next`. `src/engine/` is unchanged (`git diff main --
+src/engine` is empty). Owner answers, recorded:
+
+1. **Scene state.** A scene holds no `useState`. "Fade where it stands" is expressed in lesson data (below).
+2. **Per-lesson loading:** done now.
+3. **The step card's height is reserved.**
+4. **Catalog:** one list in lesson order, consecutive numbers, the track as a label on each card.
+5. **Lighthouse:** the median of 5 stays; nothing was loosened. If CI fails on performance, rerun first.
+6. D13's decisions are accepted.
+
+**Scene state (changes D13, item 4).** `OptimisticUiState` has `uiShown` and `serverShown` next to `uiAt` and
+`serverAt`. A marker that is not shown keeps its position in the state, so it fades out where it stands and
+keeps its text, with the prototype's easing and fade; the scene's `Marker` is a pure function of the state, and
+a test draws the same SVG for the same state whatever came before. The engine rebuilds the state on every
+step, so each step says where the markers stood when the step before it ended, in its `startState`
+(`markersLeftAt(uiAt, serverAt)`); a test checks every step against the step before. A marker that has never
+been placed waits at x = 0 with no text, as in the prototype. No chain of "hide, move, show" frames was needed:
+a patch that sets the position and `shown: true` together slides and fades in at once, as the prototype's
+marker does.
+
+- **Accepted difference.** The prototype keeps a marker's position in the page, so after any move it fades out
+  where the _previous visit_ left it. The port fades it out where the _step before_ left it. These are the same
+  when the learner steps forward, which is how the lesson is read. After going back or jumping, the marker
+  fades out while gliding to where the earlier step left it (0.3 s fade, 0.5 s slide). I think that is
+  negligible; if you do not, the M3 behaviour is the alternative. The parity test compares what is visible: a
+  marker that is not shown counts as `null`, as in the prototype.
+
+**Loading (per lesson).** `next/dynamic` over a scene file makes a chunk of its own, preloaded by the pages that
+render it. Passing the scene from the server page as a client reference was tried first and does not split:
+Next.js chunks client modules per route, so both lessons, which share `/lessons/[slug]`, got one chunk.
+
+- `content/lessons/index.ts` holds a loader per lesson; `loadLesson(slug)` reads one lesson. The lesson page
+  loads its own lesson.
+- `src/components/scenes/registry.ts` holds `{ load, View }` per `sceneId`. `View` is the lesson shell with
+  that scene, loaded on demand (`bindScene`). `LessonRoute` renders the view of its lesson's scene. The scene
+  is still in the server HTML, so the first paint shows the start state in full, and the space is reserved.
+  `LessonShell` takes the scene as a required prop and no longer imports the registry.
+- The catalog, the sitemap, `generateStaticParams` and "next lesson" read the catalog entries only. The ready
+  entries now hold `minutes` and `stepCount`, as `ReadyEntry` in `content/lessons/catalog.ts` (so the engine's
+  `CatalogEntry` is unchanged). A test fails if they differ from the lesson. `nextLessonAfter` moved from
+  `index.ts` to `catalog.ts` and returns an entry.
+- Each registry entry names the scene file twice (`load` and `View`), each with a literal `import()`, because
+  `next/dynamic` only splits an `import()` it sees in its own call. The extra cost is 0.1 KB.
+- **Adding a lesson is still one data file, one scene and one line in each of the two registries,** plus
+  switching the catalog entry to `ready` with `minutes` and `stepCount`. That is one more number pair in a
+  place you edit anyway; it is not a single registry line (see the questions in the pull request).
+
+**JavaScript per route, from the static export** (gzipped, level 9, what a browser fetches):
+
+| Route                      | Before (main, M4) | After (this branch) | Of which the page's own scene |
+| -------------------------- | ----------------- | ------------------- | ----------------------------- |
+| `/` (catalog)              | 139.2 KB, 8 files | 139.2 KB, 8 files   | none                          |
+| `/lessons/optimistic-ui/`  | 147.1 KB, 9 files | 148.5 KB, 10 files  | 1.5 KB, 1 file                |
+| `/lessons/push-pull-sync/` | 147.1 KB, 9 files | 148.4 KB, 10 files  | 1.4 KB, 1 file                |
+
+Both lesson pages are **1.3 to 1.4 KB larger** than before, so the headroom under 150 KB fell from 2.9 KB to
+1.5 KB. The split costs a fixed amount per page (the dynamic-import runtime, one more file, the step card's
+reserve), and in exchange a scene no longer costs every page. Before, every page carried every scene (about
+1.5 KB each), so a page with the twelve lessons' scenes would have been about 15 KB over the two it has now,
+which is past the limit; after, it carries one. That figure is an estimate from the two scenes' sizes, not a
+measurement. **The headroom is thin:** a new scene bigger than about 3 KB gzipped (twice the size of lesson 1's)
+would fail the check. See the questions in the pull request.
+
+**The budget is a check in CI.** `scripts/js-budget.mjs` (`pnpm budget`, its own CI step right after the
+build) reads the export: the catalog is `index.html` and every `lessons/<slug>/index.html` is a lesson page,
+so a new lesson is measured without editing the script. It fails a lesson page over 150 KB and a lesson page
+with no JavaScript file of its own (the scenes would be bundled together again). The catalog has no limit
+(reported only, as before; the spec says only "close to zero client JavaScript of its own"). A test runs the
+script on fake exports. `vitest.config.mts` now includes `scripts/**/*.test.ts`. `pnpm lighthouse` still
+runs it at its end.
+
+**The step card does not change height (changes D13, "CLS while playing").** Invisible copies of every step
+share the visible step's grid cell, so the card is as tall as the tallest step at any width, in CSS, with
+the height already in the server HTML. The copies are `invisible`, `aria-hidden`, `inert` and outside the live
+region, so a screen reader reads each step once, as it did (the live region still holds the visible step only).
+The alternatives were measuring in JavaScript (the first paint would still shift, and measuring needs
+the text laid out) and a fixed `min-height` (it cannot know how the text wraps on each screen). Two more
+reserves were needed and are done the same way: the Next button's label (it wraps to two lines on a phone on
+some steps, which moved the takeaways by 23 px), and the verdict table's height under the diagram (the table
+is taller than the diagram on a phone). `e2e/step-card.spec.ts` plays both lessons at 1280 and 390 px wide and
+checks that the card, its buttons, the takeaways, the footer, the diagram card and the page height do not
+move at any step; I checked that it fails without the reserve. The strict layout-shift total while playing
+fell from 0.06 to 0.08 on desktop to 0.004 to 0.010, which is the new text replacing the old inside the card
+(the key-idea box moves), not anything around it.
+
+- **A cost:** the page's HTML holds each step's text twice, once visible and once as the copies (a few KB;
+  they compress). Tests that look for step text with `getByText` must look inside the live region, because the
+  copies hold the same words; the two e2e helpers that did were changed.
+
+**Catalog (changes D13, "Catalog layout").** One `<ul>` in lesson order, numbered 01 to 12 with no gaps. The
+track is a `Chip` at the bottom of every card, ready or not, with "Track:" for a screen reader. The track
+section headings are gone; a visually hidden `h2` "All lessons" keeps the heading order (h1, h2, then the
+cards' h3), and the list is labelled by it. `catalog.trackLabel` in `messages/en.json` became `catalog.track`.
+
+**Lighthouse** (mobile profile, median of 5, nothing loosened): catalog and lesson 1 both performance 100,
+accessibility 100, best practices 100, LCP 0.75 s, CLS 0.000; total blocking time 31 ms and 14 ms.

@@ -1,30 +1,31 @@
 # Architecture
 
 > Filled in as the milestones land: the design system (M1), the lesson engine (M2), the first two
-> lessons (M3) and the app shell (M4) are described below. The full design is in [SPEC.md](SPEC.md).
+> lessons (M3), the app shell (M4) and the loading and layout work before the new lessons (M5 prep)
+> are described below. The full design is in [SPEC.md](SPEC.md).
 
 ## Layout
 
 Lesson content, the playback engine and the scene drawings live in three separate places,
 so a new lesson never touches the engine.
 
-| Folder                    | Holds                                                                 | Exists                              |
-| ------------------------- | --------------------------------------------------------------------- | ----------------------------------- |
-| `content/lessons/`        | Typed lesson data, the ordered registry, and the catalog of all 12    | M2 (registry), M3 (lessons), M4     |
-| `content/dev/`            | The dummy lesson for the player test page. Not in the registry        | M2                                  |
-| `src/engine/`             | Types, `useLessonPlayer`, timeline, packet helpers, validator         | M2                                  |
-| `src/components/scenes/`  | One pure SVG scene per lesson, and the registry                       | M2 (registry), M3 (scenes)          |
-| `src/components/ui/`      | Button, Pill, Chip, Card, and so on                                   | M1                                  |
-| `src/components/lesson/`  | Player parts, the lesson shell and the cards, tables and lists in it  | M2 (player parts), M3               |
-| `src/components/shell/`   | Site header, footer and the shell that wraps pages and the 404        | M4                                  |
-| `src/components/catalog/` | The lesson card and the saved-progress note                           | M4                                  |
-| `src/app/`                | Pages and layouts: `(site)` (catalog, lessons), 404, sitemap, `/dev/` | M0, gallery M1, player M2, shell M4 |
-| `src/lib/`                | Theme, saved progress, `?step=` parsing, metadata, fonts, `format`    | M1, M2, M4                          |
-| `scripts/`                | The static server, Lighthouse runner and the JavaScript budget check  | M0, M4                              |
-| `src/styles/`             | Design tokens and global styles                                       | M1                                  |
-| `.storybook/`             | Storybook configuration                                               | M1                                  |
-| `messages/`               | Interface text (`en.json`)                                            | M0                                  |
-| `e2e/`                    | Playwright tests                                                      | M0                                  |
+| Folder                    | Holds                                                                 | Exists                                   |
+| ------------------------- | --------------------------------------------------------------------- | ---------------------------------------- |
+| `content/lessons/`        | Typed lesson data, the lesson loaders, and the catalog of all 12      | M2 (registry), M3 (lessons), M4, M5 prep |
+| `content/dev/`            | The dummy lesson for the player test page. Not in the registry        | M2                                       |
+| `src/engine/`             | Types, `useLessonPlayer`, timeline, packet helpers, validator         | M2                                       |
+| `src/components/scenes/`  | One pure SVG scene per lesson, and the registry that loads them       | M2 (registry), M3 (scenes), M5 prep      |
+| `src/components/ui/`      | Button, Pill, Chip, Card, and so on                                   | M1                                       |
+| `src/components/lesson/`  | Player parts, the lesson shell and the cards, tables and lists in it  | M2 (player parts), M3                    |
+| `src/components/shell/`   | Site header, footer and the shell that wraps pages and the 404        | M4                                       |
+| `src/components/catalog/` | The lesson card and the saved-progress note                           | M4                                       |
+| `src/app/`                | Pages and layouts: `(site)` (catalog, lessons), 404, sitemap, `/dev/` | M0, gallery M1, player M2, shell M4      |
+| `src/lib/`                | Theme, saved progress, `?step=` parsing, metadata, fonts, `format`    | M1, M2, M4                               |
+| `scripts/`                | The static server, Lighthouse runner and the JavaScript budget check  | M0, M4, M5 prep                          |
+| `src/styles/`             | Design tokens and global styles                                       | M1                                       |
+| `.storybook/`             | Storybook configuration                                               | M1                                       |
+| `messages/`               | Interface text (`en.json`)                                            | M0                                       |
+| `e2e/`                    | Playwright tests                                                      | M0                                       |
 
 ## Design system (M1)
 
@@ -204,13 +205,13 @@ type and nothing else from the scene. The state holds everything the scene says:
 (`labels`, with `{name}` templates filled by `format`), the names in the diagram, and the fields the
 frames patch. The scene's `metrics` are fields of the state (lesson 1) or computed from it (lesson 2).
 
-**The page.** `src/app/(site)/lessons/[slug]/page.tsx` (server) finds the lesson, renders `LessonHeader`
-(breadcrumb, title, chips, summary) and passes it to `LessonRoute` (client), which hands it to
-`LessonShell` as a prop. The shell runs `useLessonPlayer` and lays out the two columns of the
-prototype: the stage card (header, metrics with the "Simulated" pill, diagram, step counter with
-Replay and Pause, `Stepper`) and, beside it, the `StepCard` (with `StepControls` under its live
-region) and the `Takeaways` card. On a step with a `summary`, a `VerdictTable` takes the place of the
-diagram.
+**The page.** `src/app/(site)/lessons/[slug]/page.tsx` (server) loads the lesson with `loadLesson(slug)`,
+renders `LessonHeader` (breadcrumb, title, chips, summary) and passes both to `LessonRoute` (client). That
+picks the lesson's scene view from the scene registry (see "Loading", below) and renders it. The view is
+`LessonShell` with the scene already in it. The shell runs `useLessonPlayer` and lays out the two columns of
+the prototype: the stage card (header, metrics with the "Simulated" pill, diagram, step counter with Replay
+and Pause, `Stepper`) and, beside it, the `StepCard` (with `StepControls` under its live region) and the
+`Takeaways` card. On a step with a `summary`, a `VerdictTable` takes the place of the diagram.
 
 **Parity with the prototype** is a test: `content/lessons/prototype-parity.test.ts` loads the
 prototype and compares text, step order, frame times, packets, the scene state after every frame,
@@ -234,15 +235,17 @@ page sits outside every layout (Next.js renders it under the root layout only), 
 in `SiteShell`. Each page renders its own `<main id="main">`, which the skip link targets.
 
 **Static generation.** `pnpm build` prints every route as static: `/`, `/_not-found`, the two `/dev/`
-pages, `/lessons/[slug]` with one entry per registered lesson (`generateStaticParams`, with
+pages, `/lessons/[slug]` with one entry per ready lesson (`generateStaticParams`, with
 `dynamicParams = false`), `/robots.txt` and `/sitemap.xml`. Nothing reads the query string on the
 server, so one page per lesson serves every `?step=`.
 
-**The catalog.** `content/lessons/catalog.ts` has one `CatalogEntry` per lesson of the spec table, in
-order (the position is the lesson number). `status: 'ready'` means a `Lesson` with the same slug is
-in the registry; `status: 'soon'` means there is none, and the card says so and has no link.
-`catalog.test.ts` holds both lists, and the spec table, together. The page is a server component;
-its only client part is `ProgressNote` on each ready card.
+**The catalog.** `content/lessons/catalog.ts` has one entry per lesson of the spec table, in
+order (the position is the lesson number). `status: 'ready'` means a `Lesson` with the same slug has a
+loader in `content/lessons/index.ts` and the entry also holds its `minutes` and `stepCount`; `status:
+'soon'` means there is none, and the card says so and has no link. `catalog.test.ts` holds the entries, the
+loaders, the lessons and the spec table together. The page is a server component that shows one list in
+lesson order, numbered 1 to 12, with the track as a label on each card (D14); its only client part is
+`ProgressNote` on each ready card. It reads the entries only: no lesson data and no scene.
 
 **Saved progress** (`lib/progress.ts`, `lib/useProgress.ts`). One `localStorage` key, `pl-progress`,
 holds `{ v: 1, lessons: { [slug]: { step, ticked, completed } } }`: the furthest step reached
@@ -260,7 +263,7 @@ else (`abc`, `2.5`, empty) is ignored. As the learner moves, the address is rewr
 `history.replaceState`, so stepping adds no history entries. Step 1 has no parameter. The server
 HTML is always step 1, and a deep link jumps a moment after first paint.
 
-**Next lesson.** `nextLessonAfter(slug)` gives the next _playable_ lesson. `LessonRoute` turns it
+**Next lesson.** `nextLessonAfter(slug)` (in `catalog.ts`) gives the next _playable_ entry. `LessonRoute` turns it
 into the shell's `nextLesson` prop with the router, so the shell never imports Next.js (it is also
 used in Storybook and in unit tests). On the last step the button reads "Next lesson: <title> →"
 and the right arrow does the same, through `onPastEnd`. With no next lesson the button is "Restart
@@ -272,7 +275,53 @@ Open Graph set (Next.js replaces a parent's `openGraph` whole, so each page carr
 Canonical paths end in a slash, as the export serves them, and never carry a query string.
 
 **Performance checks.** `pnpm lighthouse` runs Lighthouse CI (`lighthouserc.cjs`) against `out/` on
-the mobile profile, five runs per page, asserting the median of each metric, then runs
-`scripts/js-budget.mjs`, which gzips the scripts each page loads (ignoring Next.js's `nomodule`
-polyfill, which no current browser fetches). `e2e/layout-shift.spec.ts` plays every step of both
-lessons and requires a layout-shift total of 0. CI runs `pnpm lighthouse` after the end-to-end tests.
+the mobile profile, five runs per page, asserting the median of each metric, then runs the JavaScript
+budget. `e2e/layout-shift.spec.ts` plays every step of both lessons and requires a layout-shift total
+of 0. CI runs `pnpm lighthouse` after the end-to-end tests, and the budget on its own, right after the
+build (see "The JavaScript budget" below).
+
+## Loading and layout (M5 prep)
+
+Decided in D14. Three things changed before lesson 3, so that adding lessons does not make every page
+heavier or move.
+
+**Loading.** A page loads what it shows and nothing else.
+
+```text
+catalog page (server)     catalog.ts entries only (title, summary, track, minutes, stepCount)
+lesson page (server)      catalog.ts (header, next lesson) + loadLesson(slug)   -> one lesson's data
+LessonRoute (client)      sceneEntry(lesson.sceneId).View                       -> one scene's chunk
+```
+
+- `content/lessons/index.ts` maps a slug to a loader (`() => import('./optimistic-ui')`). `loadLesson`
+  reads one file; `loadAllLessons` is for tests.
+- `src/components/scenes/registry.ts` maps a `sceneId` to `{ load, View }`. `View` is `next/dynamic` over
+  the scene file, wrapped by `bindScene` into the lesson shell with that scene in it. Next.js turns each
+  literal `import()` into its own chunk, preloads the chunk in the HTML of the pages that render it, and
+  draws the scene in the server HTML, so the first paint is complete. `load` is the same import without
+  `next/dynamic`, for the validation tests. `next/dynamic` only splits an `import()` it can see written
+  out in its own call, so the file is named twice in each entry; `registry.test.tsx` checks the two
+  agree.
+- `LessonShell` takes the scene as a prop and does not import the registry.
+- Passing the scene from the server page as a client reference was tried first and does not split: Next.js
+  chunks client modules per route, and both lessons share `/lessons/[slug]`, so both scenes landed in one
+  chunk.
+
+**The step card does not change height.** The card must be as tall as the tallest step at every width,
+because the text of a step changes length and wraps differently on a phone. `StepCard` draws every step's
+text in the same grid cell, and shows only the current one: the others are invisible (`invisible`), out of
+reach of assistive technology (`aria-hidden`) and of the keyboard and pointer (`inert`), and outside the live
+region, so a screen reader hears each step once, as before. The cell is as tall as the tallest copy, in pure
+CSS, with the right height already in the server HTML. The Next button does the same with its label (a long
+label wraps to two lines on a phone), and the stage card reserves the verdict table's height under every
+diagram, because a table with many rows can be taller than the diagram it replaces.
+`e2e/step-card.spec.ts` measures the card, its buttons, the takeaways, the footer and the page height at
+every step of both lessons, on a desktop and a phone. Tests that look for step text with `getByText` must
+look inside the live region, because the copies hold the same words.
+
+**The JavaScript budget.** `scripts/js-budget.mjs` (`pnpm budget`) reads the export in `out/`: the
+catalog is `index.html` and every `lessons/<slug>/index.html` is a lesson page, so a new lesson is measured
+without editing the script. It gzips the scripts each page loads (blocking, async and preloaded; not
+Next.js's `nomodule` polyfill, which no current browser fetches). It fails a lesson page over 150 KB, and a
+lesson page that has no JavaScript file of its own while there are two or more (the scenes would be bundled
+together again). `scripts/js-budget.test.ts` runs it against fake exports in `pnpm test`.

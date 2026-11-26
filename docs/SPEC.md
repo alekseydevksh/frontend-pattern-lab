@@ -36,7 +36,7 @@ The ideas come from the sixteen patterns in [Frontend System Design Patterns for
 
 ## Scope and roadmap
 
-Version 1 ships all twelve lessons. Each lesson is its own pull request, so the main branch stays deployable and the repository history shows the project growing. The catalog lists the lessons by track.
+Version 1 ships all twelve lessons. Each lesson is its own pull request, so the main branch stays deployable and the repository history shows the project growing. The catalog lists the lessons in one list, in lesson order, with each lesson's track as a label on its card (D14).
 
 | # | Lesson | Article sections | Track | Origin |
 | --- | --- | --- | --- | --- |
@@ -106,7 +106,7 @@ frontend-pattern-lab/
     lessons/
       optimistic-ui.ts
       push-pull.ts
-      index.ts                # ordered registry of playable lessons
+      index.ts                # loaders of the playable lessons, by slug
       catalog.ts              # M4: catalog entries for all twelve, ready or soon
   src/
     app/
@@ -119,7 +119,7 @@ frontend-pattern-lab/
       scenes/
         OptimisticUiScene.tsx
         PushPullScene.tsx
-        registry.ts               # sceneId to component
+        registry.ts               # sceneId to a scene loaded on demand
     engine/
       types.ts
       useLessonPlayer.ts
@@ -135,8 +135,8 @@ frontend-pattern-lab/
 
 | Route | Page | Notes |
 | --- | --- | --- |
-| `/` | Catalog of all lessons by track | Server component. Built from catalog entries; lessons that are not ready show as coming soon. |
-| `/lessons/[slug]` | One lesson | Pages are generated from the registry with `generateStaticParams`. |
+| `/` | Catalog of all lessons, in lesson order | Server component. Built from catalog entries only, with the track as a label on each card; lessons that are not ready show as coming soon. |
+| `/lessons/[slug]` | One lesson | Pages are generated from the ready catalog entries with `generateStaticParams`. A page loads its own lesson and its own scene only (D14). |
 | `/lessons/[slug]?step=3` | A lesson opened at step 3 | Lets a single step be linked and shared. Counts from 1, read after hydration; an out-of-range number is clamped, a non-number ignored; step 1 has no parameter (D13). |
 
 **Rendering split.** The catalog and the lesson shell render on the server. Only the player and the scene are client components, so the catalog ships almost no JavaScript.
@@ -149,7 +149,7 @@ frontend-pattern-lab/
 
 1. Create `content/lessons/<slug>.ts` exporting a `Lesson` object.
 2. Create `components/scenes/<Name>Scene.tsx` that follows the scene contract, and register it in `scenes/registry.ts`.
-3. Add the lesson to `content/lessons/index.ts` at its position.
+3. Add the lesson's loader to `content/lessons/index.ts` and mark its catalog entry ready (D14).
 4. Run the lesson-data validation test and the end-to-end smoke test.
 5. Open one pull request titled `Add lesson: <title>`.
 
@@ -459,7 +459,7 @@ Seven automated gates run on every pull request, and a change merges only when a
 - Lighthouse at least 95 for performance, accessibility and best practices on the catalog and on one lesson.
 - Largest Contentful Paint under 2.5 s on a throttled mobile profile.
 - Cumulative Layout Shift of 0 while a lesson plays.
-- Lesson page JavaScript under 150 KB gzipped. The catalog page stays close to zero client JavaScript.
+- Lesson page JavaScript under 150 KB gzipped, checked for every lesson route by `pnpm budget` in CI (D14). The catalog page stays close to zero client JavaScript of its own.
 
 **Scripts expected in `package.json`**
 
