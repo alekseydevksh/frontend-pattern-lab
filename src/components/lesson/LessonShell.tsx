@@ -19,6 +19,9 @@ import { Takeaways } from './Takeaways';
 import { useStepInUrl } from './useStepInUrl';
 import { VerdictTable } from './VerdictTable';
 
+/** What marks an invisible copy that is only there to take up room. */
+const hiddenCopy = { 'aria-hidden': true, inert: true, 'data-table-sizer': '' } as const;
+
 export interface LessonShellProps {
   lesson: AnyLesson;
   /**
@@ -52,6 +55,7 @@ export function LessonShell({ lesson, scene, header, nextLesson }: LessonShellPr
   const player = useLessonPlayer(lesson, scene, { onPastEnd: nextLesson?.onOpen });
   const { step, stepIndex, stepCount } = player;
   const isLast = stepIndex === stepCount - 1;
+  const summarySteps = useMemo(() => lesson.steps.filter((s) => s.summary), [lesson]);
 
   useStepInUrl(stepIndex, stepCount, player.goTo);
 
@@ -84,21 +88,44 @@ export function LessonShell({ lesson, scene, header, nextLesson }: LessonShellPr
           />
           <Pill>{messages.lesson.simulated}</Pill>
         </div>
-        {step.summary ? (
-          <VerdictTable
-            summary={step.summary}
-            description={step.sceneAlt}
-            viewBox={scene.viewBox}
-          />
-        ) : (
-          <Diagram
-            scene={scene}
-            state={player.state}
-            packets={player.activePackets}
-            paused={player.isPaused}
-            label={step.sceneAlt}
-          />
-        )}
+        {/*
+          The diagram, or on a summary step the verdict table in its place, in one grid cell. The
+          table can be taller than the diagram (its rows wrap on a narrow screen), so an invisible
+          copy of each summary table sits under the diagram: the box is as tall as the table on
+          every step, and changing step moves nothing below it. The copy is hidden from sight,
+          from assistive technology and from the keyboard, like the step card's (see StepCard).
+        */}
+        <div className="grid grid-cols-[minmax(0,1fr)]">
+          {step.summary ? (
+            <VerdictTable
+              summary={step.summary}
+              description={step.sceneAlt}
+              viewBox={scene.viewBox}
+              className="[grid-area:1/1]"
+            />
+          ) : (
+            <>
+              <Diagram
+                scene={scene}
+                state={player.state}
+                packets={player.activePackets}
+                paused={player.isPaused}
+                label={step.sceneAlt}
+                className="[grid-area:1/1]"
+              />
+              {summarySteps.map((summaryStep) => (
+                <VerdictTable
+                  key={summaryStep.id}
+                  summary={summaryStep.summary!}
+                  description={summaryStep.sceneAlt}
+                  viewBox={scene.viewBox}
+                  className="pointer-events-none invisible [grid-area:1/1]"
+                  {...hiddenCopy}
+                />
+              ))}
+            </>
+          )}
+        </div>
         <div className="mt-3.5 flex flex-col gap-2.5">
           <div className="flex items-center justify-between gap-3">
             <p className="font-mono text-label font-medium tracking-caps-wide text-muted-text uppercase">
@@ -120,11 +147,12 @@ export function LessonShell({ lesson, scene, header, nextLesson }: LessonShellPr
       </Card>
 
       <div className="flex min-w-0 flex-col gap-4">
-        <StepCard step={step} stepIndex={stepIndex} stepCount={stepCount}>
+        <StepCard step={step} stepIndex={stepIndex} stepCount={stepCount} reserveFor={lesson.steps}>
           <StepControls
             stepIndex={stepIndex}
             stepCount={stepCount}
             nextTitle={step.shortTitle}
+            reserveFor={lesson.steps.map((s) => s.shortTitle)}
             finalLabel={
               nextLesson
                 ? format(messages.player.nextLesson, { title: nextLesson.title })

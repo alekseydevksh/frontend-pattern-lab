@@ -50,7 +50,10 @@ const groupOpacity = (page: Page, value: string) =>
 async function expectStep(page: Page, n: number, total: number, title: string, next: string) {
   await expect(stepTitle(page)).toHaveText(title);
   await expect(page.getByText(`Step ${n} of ${total}`)).toBeVisible();
-  await expect(page.getByText(`Step ${n} / ${total}`)).toBeVisible();
+  // In the live region: the step card also holds invisible copies of every step (to reserve its height).
+  await expect(
+    page.locator('[aria-live="polite"]').getByText(`Step ${n} / ${total}`),
+  ).toBeVisible();
   await expect(nextButton(page)).toHaveAccessibleName(next);
 }
 

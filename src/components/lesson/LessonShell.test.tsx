@@ -136,6 +136,26 @@ describe('LessonShell', () => {
     expect(screen.getByText('stale')).toBeTruthy();
   });
 
+  it('keeps the room of the verdict table under every diagram, hidden from everything but the layout', () => {
+    const { container } = mount();
+    const copy = container.querySelector('[data-table-sizer]')!;
+    expect(copy.getAttribute('aria-hidden')).toBe('true');
+    expect(copy.hasAttribute('inert')).toBe(true);
+    expect(copy.className).toContain('invisible');
+    expect(copy.querySelector('table')).not.toBeNull();
+    // Nothing can reach it: the page still has one diagram and no table.
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+    expect(screen.queryByRole('table')).toBeNull();
+  });
+
+  it('shows the real table, and no copy of it, on the summary step', () => {
+    const { container } = mount();
+    for (let i = 0; i < 5; i += 1) key('ArrowRight');
+    expect(screen.getByRole('table')).toBeTruthy();
+    expect(container.querySelector('[data-table-sizer]')).toBeNull();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
   it('says Simulated next to the metrics, outside the diagram', () => {
     mount();
     const pill = screen.getByText('Simulated');
