@@ -5,7 +5,7 @@ Each lesson teaches one idea that you step through as a diagram, in about five m
 
 > **Status:** under construction. Milestone M0 (bootstrap) only. See [docs/PROGRESS.md](docs/PROGRESS.md).
 
-**Live site:** _to be added once Vercel is connected_
+**Live site:** <https://frontend-pattern-lab.vercel.app>
 
 ## Run it
 

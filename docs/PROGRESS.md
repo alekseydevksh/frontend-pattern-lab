@@ -5,7 +5,7 @@ check, tests and build pass. Never tick on a guess.
 
 ## Milestones
 
-- [ ] M0 Bootstrap
+- [x] M0 Bootstrap
 - [ ] M1 Tokens, base UI and Storybook
 - [ ] M2 Lesson engine
 - [ ] M3 Port lessons 1 and 2
@@ -17,7 +17,7 @@ check, tests and build pass. Never tick on a guess.
 
 - [x] `pnpm build` produces a static export
 - [x] CI is green on the empty app (run 45723540889 on main)
-- [ ] The deploy URL loads
+- [x] The deploy URL loads (https://frontend-pattern-lab.vercel.app)
 
 ## Lessons
 
