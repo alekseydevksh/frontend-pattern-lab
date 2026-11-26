@@ -1,5 +1,6 @@
 // `pnpm lighthouse`: runs Lighthouse CI on the static export (see lighthouserc.cjs), prints the
-// numbers of each page's median run, then checks the JavaScript budget (scripts/js-budget.mjs).
+// numbers of each page's median run, then checks the JavaScript budget (scripts/js-budget.mjs; CI
+// also runs it as a step of its own, `pnpm budget`).
 // Exits non-zero if any budget is missed. Run `pnpm build` first.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';

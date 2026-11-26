@@ -14,7 +14,7 @@ export default defineConfig({
   oxc: { jsx: { runtime: 'automatic' } },
   test: {
     environment: 'jsdom',
-    include: ['src/**/*.test.{ts,tsx}', 'content/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}', 'content/**/*.test.ts', 'scripts/**/*.test.ts'],
     setupFiles: ['./vitest.setup.ts'],
   },
 });
