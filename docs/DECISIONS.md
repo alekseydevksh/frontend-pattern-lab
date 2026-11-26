@@ -34,6 +34,7 @@ integration for Playwright (M1), Lighthouse CI and the `lighthouse` script (M4).
 outright. The spec asks for the latest stable version, but a working lint gate matters more.
 **Alternatives:** run TypeScript 7 and a 6.x API side by side, which adds setup for no gain
 in a project this size. Revisit when typescript-eslint supports TypeScript 7.1 or later.
+**Review:** keep 6.x for now; revisit in M6.
 
 ## D3. ESLint pinned to 9.x (2026-11-26)
 
@@ -43,6 +44,7 @@ in by `eslint-config-next`) list ESLint 9 as their highest supported peer. ESLin
 to run in a trial, but it leaves unmet peers in the tree, and the spec asks for a strict one.
 **Alternatives:** ESLint 10 with a peer-dependency override, which hides the risk. pnpm prints
 a deprecation notice for 9.x on install; revisit when the plugins add ESLint 10.
+**Review:** keep 9.x for now; revisit in M6.
 
 ## D4. Hand-written scaffold instead of `create-next-app` (2026-11-26)
 
