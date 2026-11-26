@@ -3,45 +3,64 @@ import { describe, expect, it, vi } from 'vitest';
 import messages from '@messages/en.json';
 import { PlayerControls } from './PlayerControls';
 import { StepControls } from './StepControls';
+import { Stepper } from './Stepper';
 
 const titles = ['First idea', 'Second idea', 'Third idea'];
 
+function dots(overrides: Partial<Parameters<typeof Stepper>[0]> = {}) {
+  const onGoTo = vi.fn();
+  render(<Stepper stepIndex={1} stepTitles={titles} onGoTo={onGoTo} {...overrides} />);
+  return { onGoTo };
+}
+
 function steps(overrides: Partial<Parameters<typeof StepControls>[0]> = {}) {
-  const handlers = { onGoTo: vi.fn(), onBack: vi.fn(), onNext: vi.fn() };
+  const handlers = { onBack: vi.fn(), onNext: vi.fn() };
   render(
-    <StepControls
-      stepIndex={1}
-      stepTitles={titles}
-      nextTitle="Third"
-      {...handlers}
-      {...overrides}
-    />,
+    <StepControls stepIndex={1} stepCount={3} nextTitle="Third" {...handlers} {...overrides} />,
   );
   return handlers;
 }
 
-describe('StepControls', () => {
-  it('names the step counter and a button for every step, with its title', () => {
-    steps();
-    expect(screen.getByText('Step 2 of 3')).toBeTruthy();
+describe('Stepper', () => {
+  it('has a button for every step, named with its number and title', () => {
+    dots();
     for (const [i, title] of titles.entries()) {
       expect(screen.getByRole('button', { name: `Step ${i + 1}: ${title}` })).toBeTruthy();
     }
+    expect(screen.getByRole('list', { name: messages.player.stepsLabel })).toBeTruthy();
   });
 
   it('marks only the current step with aria-current', () => {
-    steps();
+    dots();
     const current = screen.getAllByRole('button').filter((b) => b.ariaCurrent === 'step');
     expect(current.map((b) => b.getAttribute('aria-label'))).toEqual(['Step 2: Second idea']);
   });
 
   it('jumps to a step when its button is pressed, the current one included', () => {
-    const { onGoTo } = steps();
+    const { onGoTo } = dots();
     fireEvent.click(screen.getByRole('button', { name: 'Step 3: Third idea' }));
     fireEvent.click(screen.getByRole('button', { name: 'Step 2: Second idea' }));
     expect(onGoTo.mock.calls).toEqual([[2], [1]]);
   });
 
+  it('fills the line up to the current step, and no further', () => {
+    const { container } = render(<Stepper stepIndex={1} stepTitles={titles} onGoTo={vi.fn()} />);
+    const lines = [...container.querySelectorAll('[data-done]')].map((l) =>
+      l.getAttribute('data-done'),
+    );
+    expect(lines).toEqual(['true', 'false']);
+  });
+
+  it('uses native buttons, so Enter and Space work without extra code', () => {
+    dots();
+    for (const button of screen.getAllByRole('button')) {
+      expect(button.tagName).toBe('BUTTON');
+      expect(button.getAttribute('type')).toBe('button');
+    }
+  });
+});
+
+describe('StepControls', () => {
   it('shows what comes next on the Next button, and moves on when pressed', () => {
     const { onNext, onBack } = steps();
     fireEvent.click(screen.getByRole('button', { name: 'Next: Third →' }));
