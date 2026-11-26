@@ -3,18 +3,28 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The player's controls are documented components: each has a story file with a side-by-side
+ * The lesson components are documented components: each has a story file with a side-by-side
  * light and dark story. (Diagram and PacketLayer are drawing parts of the player, covered by
  * the end-to-end test on /dev/player/.)
  */
-const documented = ['StepControls', 'PlayerControls'];
+const documented = [
+  'StepControls',
+  'PlayerControls',
+  'Stepper',
+  'StepCard',
+  'Takeaways',
+  'MetricsRow',
+  'CodeBlock',
+  'VerdictTable',
+  'LessonShell',
+];
 
-describe('Storybook coverage of the player controls', () => {
+describe('Storybook coverage of the lesson components', () => {
   it.each(documented)('%s has a story file with a side-by-side light and dark story', (name) => {
     const file = join(__dirname, `${name}.stories.tsx`);
     expect(existsSync(file), `${name}.stories.tsx exists`).toBe(true);
     const source = readFileSync(file, 'utf8');
     expect(source).toMatch(/export const BothThemes\b/);
-    expect(source).toContain('<ThemePair>');
+    expect(source).toMatch(/<ThemePair[ >]/);
   });
 });
