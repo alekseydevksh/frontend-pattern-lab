@@ -9,6 +9,7 @@ const eslintConfig = [
       'out/**',
       'coverage/**',
       'playwright-report/**',
+      'storybook-static/**',
       'reference/**',
       'next-env.d.ts',
     ],
