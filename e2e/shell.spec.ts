@@ -12,8 +12,10 @@ const LESSON_2 = '/lessons/push-pull-sync/';
 const STORAGE_KEY = 'pl-progress';
 
 const stepTitle = (page: Page) => page.getByRole('heading', { level: 2 });
+// The step card also holds invisible copies of every step (to reserve its height), so the
+// counter is looked for in the live region, which has the visible step only.
 const stepCounter = (page: Page, n: number, total: number) =>
-  page.getByText(`Step ${n} / ${total}`);
+  page.locator('[aria-live="polite"]').getByText(`Step ${n} / ${total}`);
 const search = (page: Page) => page.evaluate(() => window.location.search);
 const card = (page: Page, title: string) =>
   page.getByRole('article').filter({ has: page.getByRole('heading', { name: title, level: 3 }) });
@@ -37,21 +39,43 @@ async function openLesson(page: Page, url: string) {
 test.describe('the catalog', () => {
   test.use({ colorScheme: 'light' });
 
-  test('lists all twelve lessons by track, two ready and ten coming soon', async ({ page }) => {
+  test('lists all twelve lessons in one list, in order, with the track on each card', async ({
+    page,
+  }) => {
     await page.goto('/');
     await expect(
       page.getByRole('heading', { level: 1, name: 'Frontend Pattern Lab' }),
     ).toBeVisible();
     await expect(page.getByText('2 of 12 lessons are ready.')).toBeVisible();
 
-    const tracks = page.getByRole('heading', { level: 2 });
-    await expect(tracks).toHaveText([
-      'Data and state',
-      'Rendering and performance',
-      'Structure',
-      'Product reliability',
-    ]);
+    // One list in lesson order, numbered 1 to 12, not grouped by track.
+    await expect(page.getByRole('list').filter({ has: page.getByRole('article') })).toHaveCount(1);
     await expect(page.getByRole('article')).toHaveCount(12);
+    const titles = page.getByRole('article').getByRole('heading', { level: 3 });
+    await expect(titles).toHaveText([
+      'Optimistic UI',
+      'Push + Pull Sync',
+      'Virtualization',
+      'Normalized Data',
+      'Rendering Isolation',
+      'State Ownership',
+      'Requirements First and Component Boundaries',
+      'Container, View, ViewModel',
+      'Backend for Frontend',
+      'Progressive Rendering',
+      'Permission-Aware UI',
+      'Errors and Observability',
+    ]);
+    const numbers = page.locator('article > p:first-child span[aria-hidden="true"]');
+    await expect(numbers).toHaveText(
+      Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')),
+    );
+    // The track is a label on each card, ready or not.
+    await expect(card(page, 'Optimistic UI')).toContainText('Data and state');
+    await expect(card(page, 'Virtualization')).toContainText('Rendering and performance');
+    await expect(card(page, 'Normalized Data')).toContainText('Data and state');
+    await expect(card(page, 'Container, View, ViewModel')).toContainText('Structure');
+    await expect(card(page, 'Errors and Observability')).toContainText('Product reliability');
     await expect(page.getByText('Coming soon', { exact: true })).toHaveCount(10);
 
     // The ready lessons are links, and the others are not.

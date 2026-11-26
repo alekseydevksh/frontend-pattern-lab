@@ -1,15 +1,23 @@
 import type { CatalogEntry } from '@/engine/types';
 
+/** A lesson that can be played. It also says how long it is, so the catalog needs no lesson data. */
+export type ReadyEntry = CatalogEntry & { status: 'ready'; minutes: number; stepCount: number };
+export type SoonEntry = CatalogEntry & { status: 'soon' };
+export type CatalogRow = ReadyEntry | SoonEntry;
+
 /**
  * The catalog: one entry for each of the twelve lessons in the spec table, ready or not. The
- * position in the list is the lesson number. A lesson that can be played is `ready` and also
- * has a `Lesson` in index.ts with the same slug, title, summary and track; one that is not is
- * `soon` and has no `Lesson`, so there are never fake steps. catalog.test.ts holds the two
- * lists together.
+ * position in the list is the lesson number. It is all the catalog page, the sitemap and the
+ * "next lesson" button load: no lesson data and no scene.
  *
- * Adding a lesson flips its entry from `soon` to `ready`; the slug and text stay as they are.
+ * A lesson that can be played is `ready`, has a loader in index.ts, and repeats its slug, title,
+ * summary, track, minutes and step count here; one that is not is `soon` and has no `Lesson`, so
+ * there are never fake steps. catalog.test.ts holds the two together.
+ *
+ * Adding a lesson flips its entry from `soon` to `ready` and adds `minutes` and `stepCount`; the
+ * slug and text stay as they are.
  */
-export const catalog: readonly CatalogEntry[] = [
+export const catalog: readonly CatalogRow[] = [
   {
     slug: 'optimistic-ui',
     title: 'Optimistic UI',
@@ -17,6 +25,8 @@ export const catalog: readonly CatalogEntry[] = [
       'Update the screen first, confirm with the server second, and undo cleanly when the server says no.',
     track: 'Data and state',
     status: 'ready',
+    minutes: 4,
+    stepCount: 6,
   },
   {
     slug: 'push-pull-sync',
@@ -24,6 +34,8 @@ export const catalog: readonly CatalogEntry[] = [
     summary: 'Load with requests, stay fresh with events, and recover when the connection drops.',
     track: 'Data and state',
     status: 'ready',
+    minutes: 5,
+    stepCount: 7,
   },
   {
     slug: 'virtualization',
@@ -104,4 +116,18 @@ export const catalog: readonly CatalogEntry[] = [
 export function lessonNumber(slug: string): number | null {
   const index = catalog.findIndex((entry) => entry.slug === slug);
   return index === -1 ? null : index + 1;
+}
+
+/** The lessons that can be played, in lesson order. */
+export const readyEntries: readonly ReadyEntry[] = catalog.filter(
+  (entry): entry is ReadyEntry => entry.status === 'ready',
+);
+
+/**
+ * The playable lesson that follows `slug`, or null on the last one. A lesson that is only a
+ * catalog entry ("coming soon") is never the next lesson, because there is nothing to open.
+ */
+export function nextLessonAfter(slug: string): ReadyEntry | null {
+  const index = readyEntries.findIndex((entry) => entry.slug === slug);
+  return index === -1 ? null : (readyEntries[index + 1] ?? null);
 }

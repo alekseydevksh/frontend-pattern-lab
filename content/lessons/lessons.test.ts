@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { scenes } from '@/components/scenes/registry';
+import { loadAllScenes } from '@/components/scenes/registry';
 import { validateLesson, validateLessons } from '@/engine/validate';
-import { lessons } from './index';
+import { loadAllLessons } from './index';
+
+const lessons = await loadAllLessons();
+const scenes = await loadAllScenes();
 
 /**
  * The content validation test. It runs over every lesson in the registry, so a mistake in

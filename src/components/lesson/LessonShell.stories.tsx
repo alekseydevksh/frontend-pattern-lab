@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { optimisticUi } from '@content/lessons/optimistic-ui';
 import { pushPullSync } from '@content/lessons/push-pull-sync';
+import { optimisticUiScene } from '@/components/scenes/OptimisticUiScene';
+import { pushPullScene } from '@/components/scenes/PushPullScene';
 import { ThemePair } from '@/stories/ThemePair';
 import { LessonHeader } from './LessonHeader';
 import { LessonShell } from './LessonShell';
@@ -10,6 +12,7 @@ const meta = {
   component: LessonShell,
   args: {
     lesson: optimisticUi,
+    scene: optimisticUiScene,
     header: <LessonHeader lesson={optimisticUi} lessonCount={2} />,
   },
   parameters: {
@@ -28,7 +31,11 @@ type Story = StoryObj<typeof meta>;
 
 export const OptimisticUi: Story = {};
 export const PushPullSync: Story = {
-  args: { lesson: pushPullSync, header: <LessonHeader lesson={pushPullSync} lessonCount={2} /> },
+  args: {
+    lesson: pushPullSync,
+    scene: pushPullScene,
+    header: <LessonHeader lesson={pushPullSync} lessonCount={2} />,
+  },
 };
 
 /** The last step of a lesson with a next lesson says "Next lesson: <title> →" (press →, then →). */

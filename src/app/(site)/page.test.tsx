@@ -22,17 +22,48 @@ describe('CatalogPage', () => {
     expect(screen.queryByRole('link', { name: 'Virtualization' })).toBeNull();
   });
 
-  it('groups the lessons into four tracks', () => {
+  it('is one list in lesson order, numbered 1 to 12 without a gap', () => {
     render(<CatalogPage />);
-    const tracks = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(tracks).toEqual([
-      'Data and state',
-      'Rendering and performance',
-      'Structure',
-      'Product reliability',
-    ]);
-    const structure = screen.getByRole('region', { name: 'Structure' });
-    expect(within(structure).getAllByRole('article')).toHaveLength(2);
+    const list = screen.getByRole('list');
+    expect(within(list).getAllByRole('listitem')).toHaveLength(12);
+    const articles = screen.getAllByRole('article');
+    expect(articles.map((a) => within(a).getByRole('heading').textContent)).toEqual(
+      catalog.map((entry) => entry.title),
+    );
+    expect(articles.map((a) => /Lesson (\d+)/.exec(a.textContent ?? '')?.[1])).toEqual(
+      Array.from({ length: 12 }, (_, i) => String(i + 1)),
+    );
+    // The numbers a sighted visitor sees are the same, padded.
+    expect(articles.map((a) => a.querySelector('[aria-hidden="true"]')?.textContent)).toEqual(
+      Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')),
+    );
+  });
+
+  it('does not group by track: the only section heading is the hidden list title', () => {
+    render(<CatalogPage />);
+    const sections = screen.getAllByRole('heading', { level: 2 });
+    expect(sections.map((h) => h.textContent)).toEqual(['All lessons']);
+    expect(screen.queryByRole('region', { name: 'Structure' })).toBeNull();
+  });
+
+  it('shows the track as a label on every card, ready or not', () => {
+    render(<CatalogPage />);
+    const articles = screen.getAllByRole('article');
+    articles.forEach((article, index) => {
+      expect(within(article).getByText(catalog[index]!.track), catalog[index]!.slug).toBeTruthy();
+    });
+    const virtualization = articles[2]!;
+    expect(virtualization.textContent).toContain('Track: Rendering and performance');
+  });
+
+  it('says how long each ready lesson is, from the catalog entries alone', () => {
+    render(<CatalogPage />);
+    const optimistic = screen.getAllByRole('article')[0]!;
+    expect(within(optimistic).getByText('4 min')).toBeTruthy();
+    expect(within(optimistic).getByText('6 steps')).toBeTruthy();
+    const pushPull = screen.getAllByRole('article')[1]!;
+    expect(within(pushPull).getByText('5 min')).toBeTruthy();
+    expect(within(pushPull).getByText('7 steps')).toBeTruthy();
   });
 
   it('says how many lessons are ready', () => {

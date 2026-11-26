@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
-import { scenes } from '@/components/scenes/registry';
+import { loadAllScenes } from '@/components/scenes/registry';
 import { patchState, startStateOf } from '@/engine/state';
 import type { AnyLesson } from '@/engine/types';
 import { optimisticUi } from './optimistic-ui';
@@ -52,6 +52,7 @@ function loadPrototype(): { lessons: Proto[]; scenes: Proto[]; close: () => void
 }
 
 const proto = loadPrototype();
+const scenes = await loadAllScenes();
 
 const paragraphs = (body: string[]) =>
   body

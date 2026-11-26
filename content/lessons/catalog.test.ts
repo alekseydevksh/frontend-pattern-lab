@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Track } from '@/engine/types';
-import { catalog, lessonNumber } from './catalog';
-import { lessons, nextLessonAfter } from './index';
+import { catalog, lessonNumber, nextLessonAfter, readyEntries } from './catalog';
+import { lessonLoaders, loadAllLessons, loadLesson } from './index';
+
+const lessons = await loadAllLessons();
 
 const tracks: Track[] = [
   'Data and state',
@@ -40,7 +42,7 @@ describe('content/lessons/catalog', () => {
     }
   });
 
-  it('has a playable lesson for every ready entry, in the same place and with the same text', () => {
+  it('has a playable lesson for every ready entry, in the same place and with the same text and size', () => {
     catalog.forEach((entry, index) => {
       const lesson = lessons.find((l) => l.slug === entry.slug);
       if (entry.status === 'soon') {
@@ -52,7 +54,14 @@ describe('content/lessons/catalog', () => {
       expect(lesson?.title, entry.slug).toBe(entry.title);
       expect(lesson?.summary, entry.slug).toBe(entry.summary);
       expect(lesson?.track, entry.slug).toBe(entry.track);
+      // The catalog repeats the length so it never has to load a lesson to show it.
+      expect(entry.status === 'ready' && entry.minutes, entry.slug).toBe(lesson?.minutes);
+      expect(entry.status === 'ready' && entry.stepCount, entry.slug).toBe(lesson?.steps.length);
     });
+  });
+
+  it('has a loader for every ready entry and for no other lesson', () => {
+    expect(Object.keys(lessonLoaders).sort()).toEqual(readyEntries.map((e) => e.slug).sort());
   });
 
   it('has a ready entry for every registered lesson', () => {
@@ -61,6 +70,10 @@ describe('content/lessons/catalog', () => {
       expect(entry?.status, lesson.slug).toBe('ready');
     }
     expect(catalog.filter((e) => e.status === 'ready')).toHaveLength(lessons.length);
+  });
+
+  it('lists the ready entries in lesson order', () => {
+    expect(readyEntries.map((e) => e.slug)).toEqual(['optimistic-ui', 'push-pull-sync']);
   });
 
   it('numbers lessons by their place in the catalog', () => {
@@ -72,16 +85,30 @@ describe('content/lessons/catalog', () => {
 
 describe('nextLessonAfter', () => {
   it('gives the next playable lesson', () => {
-    expect(nextLessonAfter('optimistic-ui')?.slug).toBe('push-pull-sync');
+    const next = nextLessonAfter('optimistic-ui');
+    expect(next?.slug).toBe('push-pull-sync');
+    expect(next?.title).toBe('Push + Pull Sync');
   });
 
   it('gives nothing after the last playable lesson, even if a coming-soon one follows', () => {
-    const last = lessons.at(-1);
+    const last = readyEntries.at(-1);
     expect(last).toBeDefined();
     expect(nextLessonAfter(last?.slug ?? '')).toBeNull();
   });
 
+  it('never gives a coming-soon lesson', () => {
+    expect(nextLessonAfter('virtualization')).toBeNull();
+  });
+
   it('gives nothing for an unknown slug', () => {
     expect(nextLessonAfter('nope')).toBeNull();
+  });
+});
+
+describe('loadLesson', () => {
+  it('loads one lesson by slug, and nothing for a slug that has none', async () => {
+    expect((await loadLesson('push-pull-sync'))?.slug).toBe('push-pull-sync');
+    expect(await loadLesson('virtualization')).toBeNull();
+    expect(await loadLesson('toString')).toBeNull();
   });
 });

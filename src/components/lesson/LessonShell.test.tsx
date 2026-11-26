@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { optimisticUi } from '@content/lessons/optimistic-ui';
 import { pushPullSync } from '@content/lessons/push-pull-sync';
+import { optimisticUiScene } from '@/components/scenes/OptimisticUiScene';
+import { pushPullScene } from '@/components/scenes/PushPullScene';
 import type { AnyLesson } from '@/engine/types';
 import { LessonHeader } from './LessonHeader';
 import { LessonShell } from './LessonShell';
@@ -10,6 +12,9 @@ import { LessonShell } from './LessonShell';
  * The shell with the real lessons, in jsdom: the first step, the keys, the takeaways, and the
  * verdict table on the last step. Time is faked, so a frame runs when the test says.
  */
+const sceneOf = (lesson: AnyLesson) =>
+  lesson === pushPullSync ? pushPullScene : optimisticUiScene;
+
 function mount(
   lesson: AnyLesson = optimisticUi,
   nextLesson?: { title: string; onOpen: () => void },
@@ -17,6 +22,7 @@ function mount(
   return render(
     <LessonShell
       lesson={lesson}
+      scene={sceneOf(lesson)}
       header={<LessonHeader lesson={lesson} lessonCount={12} />}
       nextLesson={nextLesson}
     />,
@@ -128,14 +134,6 @@ describe('LessonShell', () => {
     key('ArrowRight');
     act(() => void vi.advanceTimersByTime(500));
     expect(screen.getByText('stale')).toBeTruthy();
-  });
-
-  it('throws a clear message for a lesson whose scene is not registered', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() =>
-      render(<LessonShell lesson={{ ...optimisticUi, sceneId: 'missing' }} header={null} />),
-    ).toThrow(/no scene "missing"/);
-    error.mockRestore();
   });
 
   it('says Simulated next to the metrics, outside the diagram', () => {
