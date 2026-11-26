@@ -6,5 +6,50 @@
   "home": {
     "heading": "Frontend Pattern Lab",
     "placeholder": "Lessons are on their way."
+  },
+  "theme": {
+    "label": "Theme",
+    "toggleLabel": "Toggle dark theme"
+  },
+  "componentGallery": {
+    "title": "Component gallery",
+    "description": "Every base component in one place. The accessibility checks run against this page.",
+    "intro": "Use the theme button to compare the light and dark themes.",
+    "sections": {
+      "buttons": "Buttons",
+      "pills": "Pills",
+      "chips": "Chips",
+      "cards": "Cards",
+      "metrics": "Metric tiles",
+      "keys": "Keyboard keys",
+      "theme": "Theme toggle"
+    },
+    "samples": {
+      "primary": "Next: update first",
+      "secondary": "Back",
+      "primaryDisabled": "Next (disabled)",
+      "secondaryDisabled": "Back (disabled)",
+      "small": "Replay",
+      "smallPaused": "Resume",
+      "pillNeutral": "Summary",
+      "pillReq": "Technique",
+      "pillRes": "Pull",
+      "pillEv": "Push",
+      "pillBad": "Failure",
+      "chipTime": "4 min",
+      "chipLevel": "Intermediate",
+      "chipSteps": "6 steps",
+      "cardTitle": "Waiting makes a tap feel broken",
+      "cardBody": "A card holds one idea. It has a panel background, a thin border and a soft shadow.",
+      "metricLabelA": "UI changes at",
+      "metricValueA": "0 ms",
+      "metricLabelB": "Client vs server",
+      "metricValueB": "in sync",
+      "metricLabelC": "Rollback",
+      "metricValueC": "yes",
+      "keyStep": "step",
+      "keyReplay": "replay",
+      "keyPause": "pause"
+    }
   }
 }
