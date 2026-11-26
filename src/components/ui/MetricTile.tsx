@@ -16,7 +16,13 @@ const toneClasses: Record<MetricTone, string> = {
   bad: 'text-bad-text',
 };
 
-/** One labelled number in the strip above a diagram. The label is set in capitals by CSS. */
+/**
+ * One labelled number in the strip above a diagram. The label is set in capitals by CSS.
+ *
+ * The label wraps instead of being cut off: on a phone a tile is about 90 px wide, and labels
+ * such as "Client vs server" do not fit on one line. The value sits at the bottom of the tile, so
+ * in a row of tiles (which stretch to the tallest) the values stay level when one label wraps.
+ */
 export function MetricTile({
   label,
   value,
@@ -28,17 +34,17 @@ export function MetricTile({
     <div
       data-tone={tone}
       className={cx(
-        'min-w-0 rounded-field border-[1.5px] border-line bg-paper px-2.5 py-2',
+        'flex min-w-0 flex-col rounded-field border-[1.5px] border-line bg-paper px-2.5 py-2',
         className,
       )}
       {...props}
     >
-      <span className="block truncate font-mono text-micro tracking-caps text-muted uppercase">
+      <span className="block font-mono text-micro tracking-caps text-balance wrap-break-word text-muted uppercase">
         {label}
       </span>
       <span
         className={cx(
-          'block font-mono text-metric font-semibold tabular-nums transition-colors duration-(--duration-ui)',
+          'mt-auto block font-mono text-metric font-semibold tabular-nums transition-colors duration-(--duration-ui)',
           toneClasses[tone],
         )}
       >
