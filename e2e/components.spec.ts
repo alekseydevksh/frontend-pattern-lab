@@ -1,43 +1,9 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { expectNoAxeViolations, storeTheme } from './support';
 
 const GALLERY = '/dev/components/';
 const THEMES = ['light', 'dark'] as const;
 const PAPER = { light: 'rgb(237, 240, 245)', dark: 'rgb(12, 20, 38)' } as const;
-
-/** Stores a theme choice the way a returning visitor would have it, before any page script runs. */
-async function storeTheme(page: Page, theme: string) {
-  await page.addInitScript((value) => localStorage.setItem('pl-theme', value), theme);
-}
-
-/**
- * Runs axe with every WCAG A and AA rule it knows, plus its best practices. The faint page
- * grid is a background image, which makes axe skip the contrast check for text above it, so
- * it is switched off for the run: contrast is then measured against the plain paper colour.
- */
-async function expectNoAxeViolations(page: Page) {
-  await page.addStyleTag({ content: 'body { background-image: none !important; }' });
-  // Colours must be at rest: axe would otherwise measure the middle of a transition.
-  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'])
-    .analyze();
-  const summary = results.violations.map((v) => ({
-    rule: v.id,
-    impact: v.impact,
-    nodes: v.nodes.map((n) => n.target.join(' ') + ' :: ' + (n.any[0]?.message ?? n.html)),
-  }));
-  expect(summary).toEqual([]);
-  // A contrast check that axe could not decide is not a pass, with one exception: axe cannot
-  // measure symbols such as the arrow keys ("only non-text characters"). Those are drawn in
-  // the ink colour on the paper colour, which the gallery's text checks already cover.
-  const undecided = results.incomplete
-    .filter((rule) => rule.id === 'color-contrast')
-    .flatMap((rule) => rule.nodes)
-    .filter((node) => !node.any.some((check) => check.data?.messageKey === 'nonBmp'))
-    .map((node) => node.target.join(' '));
-  expect(undecided).toEqual([]);
-}
 
 for (const theme of THEMES) {
   test.describe(`${theme} theme`, () => {
