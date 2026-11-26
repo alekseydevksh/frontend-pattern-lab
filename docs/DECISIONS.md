@@ -96,3 +96,30 @@ package, so the install script is not needed, and pnpm 12 fails the install if i
 undecided. `pnpm peers check` reports `typescript ^5` wanted by `tsconfck`, a transitive
 dependency of `@storybook/nextjs-vite`; Storybook runs fine on TypeScript 6.0.3. Radix is not
 added in M1 because no component in `components/ui` needs a complex pattern.
+
+## D9. Design system choices in M1 (2026-11-26)
+
+- **Derived text tokens.** The spec's signal colours keep their exact values, but used as
+  small text they measure 3.2:1 to 4.3:1 in the light theme (AA needs 4.5:1), so the reference
+  prototype's coloured pill and metric text would fail axe. Components use `--req-text`,
+  `--res-text`, `--ev-text`, `--bad-text` and `--muted-text` (30% `--ink` mixed in), which give
+  5:1 or better everywhere. Borders, fills and marks still use the raw colours.
+- **Dark values written out, not `light-dark()`.** The dark theme redefines the same names, as
+  the spec describes, and as the prototype does. It costs one repeated block of ten values.
+- **Native elements, no Radix yet.** The seven ui components need no complex pattern. The toggle
+  is a button with `aria-pressed`; Radix Switch would add a dependency for no gain. Radix comes
+  in when a component needs Tabs, Tooltip or Dialog.
+- **Fonts.** `next/font/google`: Bricolage Grotesque (600, 800), IBM Plex Sans (400, 500, 600)
+  and IBM Plex Mono (400, 500, 600). All three are under the SIL Open Font Licence 1.1, which
+  allows self-hosting and embedding. The files are downloaded at build time and served from the
+  site, so visitors make no request to Google.
+- **Hover states are an addition.** The prototype has none. Buttons get a small background shift
+  on hover (`bg-paper` for secondary, a lighter ink for primary). Say if you want none.
+- **Component gallery in the export.** `/dev/components/` ships in the static export, marked
+  `noindex`, because the end-to-end tests run against the export. Hiding it from production
+  would need a second build for tests. Revisit in M6.
+- **Storybook telemetry off.** `core.disableTelemetry` is set, so nothing is sent from the
+  machine that runs Storybook.
+- **Not done in M1:** `--on-signal` text for use on filled signal colours (the prototype uses
+  white on `--bad`, which is 2.8:1 in the dark theme). It is needed by the first scene that
+  draws a toast or badge, so it is decided in M3.
