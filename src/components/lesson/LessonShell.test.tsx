@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { optimisticUi } from '@content/lessons/optimistic-ui';
 import { pushPullSync } from '@content/lessons/push-pull-sync';
+import type { AnyLesson } from '@/engine/types';
 import { LessonHeader } from './LessonHeader';
 import { LessonShell } from './LessonShell';
 
@@ -9,7 +10,7 @@ import { LessonShell } from './LessonShell';
  * The shell with the real lessons, in jsdom: the first step, the keys, the takeaways, and the
  * verdict table on the last step. Time is faked, so a frame runs when the test says.
  */
-function mount(lesson = optimisticUi) {
+function mount(lesson: AnyLesson = optimisticUi) {
   return render(
     <LessonShell lesson={lesson} header={<LessonHeader lesson={lesson} lessonCount={2} />} />,
   );
