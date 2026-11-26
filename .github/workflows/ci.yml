@@ -52,6 +52,20 @@ jobs:
       - name: End-to-end tests
         run: pnpm test:e2e
 
+      # Lighthouse on the catalog and one lesson page (mobile profile), then the JavaScript budget.
+      # It measures the export built above, using the browser Playwright just installed.
+      - name: Lighthouse CI and JavaScript budget
+        run: pnpm lighthouse
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
