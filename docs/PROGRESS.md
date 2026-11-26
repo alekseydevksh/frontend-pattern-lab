@@ -105,12 +105,23 @@ Not a lesson: the preparation the owner asked for before lesson 4 (D16).
       139.2 KB (limit 145 KB)
 - [x] `src/engine` unchanged; lint, types, unit, end-to-end, axe, Storybook build and Lighthouse pass
 
+### Lesson 4 acceptance criteria
+
+- [x] Content validation passes (`pnpm test`: `content/lessons/lessons.test.ts` and the catalog test)
+- [x] The end-to-end test plays it from the first step to the last with the keyboard, and checks the metrics,
+      the stale marks and the verdict table (`e2e/lesson-04-normalized-data.spec.ts`)
+- [x] axe is clean in both themes, on the final state of every step and with a packet in flight
+- [x] Checked at desktop (1280 px) and phone width (375 px): no layout shift, the step card keeps its height,
+      the metric labels fit, the page never scrolls sideways; screenshots of every step in both themes
+- [x] Lesson page JavaScript 146.8 KB gzipped (limit 150 KB); no other page changed in size
+- [ ] The owner checks the look (screenshots: see the pull request)
+
 ## Lessons
 
 - [x] 1. Optimistic UI
 - [x] 2. Push + Pull Sync
 - [x] 3. Virtualization
-- [ ] 4. Normalized Data
+- [x] 4. Normalized Data
 - [ ] 5. Rendering Isolation
 - [ ] 6. State Ownership
 - [ ] 7. Requirements First and Component Boundaries
