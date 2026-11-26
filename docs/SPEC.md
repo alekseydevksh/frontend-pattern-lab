@@ -2,6 +2,10 @@
 
 Nov 25, 2026 · @Alex
 
+> **This file is the living copy of the spec.** From M3 on, the owner's decisions are written
+> here, and the spec outside the repository is no longer updated. Changes since the first
+> version are recorded in [DECISIONS.md](DECISIONS.md) (D12 and later).
+
 ## Overview and goals
 
 Frontend Pattern Lab is a static website of short animated lessons on frontend architecture patterns for large React applications. Each lesson teaches one idea that the reader steps through as a diagram. The project is a portfolio piece for a Senior Frontend, Design Systems and AI Developer Tooling profile, and Claude Code should build it from this document.
@@ -102,7 +106,8 @@ frontend-pattern-lab/
     lessons/
       optimistic-ui.ts
       push-pull.ts
-      index.ts                # ordered registry, includes coming-soon stubs
+      index.ts                # ordered registry of playable lessons
+      catalog.ts              # M4: catalog entries for all twelve, ready or soon
   src/
     app/
       layout.tsx
@@ -130,7 +135,7 @@ frontend-pattern-lab/
 
 | Route | Page | Notes |
 | --- | --- | --- |
-| `/` | Catalog of all lessons by track | Server component. Unreleased lessons show as coming soon. |
+| `/` | Catalog of all lessons by track | Server component. Built from catalog entries; lessons that are not ready show as coming soon. |
 | `/lessons/[slug]` | One lesson | Pages are generated from the registry with `generateStaticParams`. |
 | `/lessons/[slug]?step=3` | A lesson opened at step 3 | Lets a single step be linked and shared. |
 
@@ -158,7 +163,6 @@ export type Tone = 'req' | 'res' | 'ev' | 'bad';
 export interface Lesson<S> {
   slug: string;
   order: number;
-  status: 'published' | 'coming-soon';
   track: 'Data and state' | 'Rendering and performance' | 'Structure' | 'Product reliability';
   title: string;
   summary: string;
@@ -172,12 +176,24 @@ export interface Lesson<S> {
   steps: Step<S>[];
 }
 
+/**
+ * A catalog row (added in M4). `Lesson` is only for lessons that can be played. A lesson that
+ * is not ready has a catalog entry and no `Lesson`, so the catalog never needs fake steps.
+ */
+export interface CatalogEntry {
+  slug: string;
+  title: string;
+  summary: string;
+  track: Track;
+  status: 'ready' | 'soon';            // 'ready' means a playable Lesson with this slug exists
+}
+
 export interface Step<S> {
   id: string;
   tag: string;                         // PROBLEM, TECHNIQUE, FAILURE, SUMMARY, ...
   tone: Tone | 'neutral';
   title: string;
-  shortTitle: string;                  // used by the "Next: ..." button
+  shortTitle: string;                  // used by the "Next: ..." button: it names the step that comes next
   body: string[];                      // paragraphs, inline code in backticks
   keyIdea: string;
   code?: { language: 'ts' | 'tsx' | 'json'; source: string };
@@ -185,7 +201,7 @@ export interface Step<S> {
   sceneAlt: string;                    // text alternative of the diagram at this step
   startState?: Partial<S>;             // merged over baseState when the step starts
   frames: Frame<S>[];
-  summary?: SummaryTable;              // replaces the diagram with a verdict table
+  summary?: SummaryTable;              // the lesson shell shows it in place of the diagram
 }
 
 export interface Frame<S> {
@@ -218,7 +234,7 @@ export interface Metric { value: string; tone?: 'good' | 'bad' }
 
 **Player hook**
 
-`useLessonPlayer(lesson, scene)` returns `stepIndex`, `state`, `activePackets`, `isPaused`, `goTo(i)`, `next()`, `back()`, `replay()` and `togglePause()`.
+`useLessonPlayer(lesson, scene, options)` returns `stepIndex`, `state`, `activePackets`, `isPaused`, `goTo(i)`, `next()`, `back()`, `replay()` and `togglePause()`. The options include `onPastEnd`, a callback for the right arrow on the last step; the page decides what it does (M4 opens the next lesson).
 
 **Playback rules**
 
@@ -228,12 +244,13 @@ export interface Metric { value: string; tone?: 'good' | 'bad' }
 - With reduced motion, all frames apply at once and packet animation is skipped.
 - The clock is injectable, so tests use fake timers instead of waiting.
 - Packets animate with the Web Animations API and clean themselves up when a step changes.
-- Keys: left and right arrows change step, `R` replays, Space pauses unless focus is on a button or link.
+- Keys: left and right arrows change step, `R` replays, Space pauses unless focus is on a button or link. The right arrow on the last step calls the `onPastEnd` option, if there is one.
+- A step with a `summary` shows its verdict table in the lesson shell, in place of the diagram.
 - Visited steps tick the matching takeaway. Progress is kept per lesson in `localStorage`, guarded with try and catch.
 
 **Scene contract.** A scene is pure: the same state always draws the same SVG. It sets no timers and reads no globals. Text inside the SVG uses the token classes, never hard-coded colours.
 
-**Content validation test.** A Vitest test imports every lesson and fails the build if step ids repeat, `takeawayIndex` is out of range, frames are not sorted by `at`, a `sceneId` is missing from the registry, a packet names a lane the scene does not define, or `sceneAlt` is empty.
+**Content validation test.** A Vitest test imports every lesson and fails the build if step ids repeat, `takeawayIndex` is out of range, frames are not sorted by `at`, a `sceneId` is missing from the registry, a packet names a lane the scene does not define, or `sceneAlt` is empty. It also fails if fewer than two lessons are registered, so an emptied registry cannot pass by having nothing to check.
 
 ## Design system and accessibility
 
@@ -251,6 +268,7 @@ The look is a drafting-table workbench: cool paper with a faint grid, deep ink t
 | `--res` | #0d8587 | #38c3c5 | Server answers, confirmed state |
 | `--ev` | #6c4fe0 | #a592ff | Pushed events |
 | `--bad` | #c42248 | #ff6384 | Failure, rollback |
+| `--on-signal` | #ffffff | #0c1426 | Text on a filled signal colour (M3). See D12 for which fills |
 
 **Type.** Bricolage Grotesque for headings, IBM Plex Sans for body text, IBM Plex Mono for labels, metrics and code. Keep text lines near 65 characters. Use tabular numbers wherever digits line up.
 
