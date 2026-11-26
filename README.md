@@ -28,6 +28,7 @@ pnpm format:check
 pnpm typecheck
 pnpm test         # unit tests (Vitest)
 pnpm build && pnpm test:e2e   # end-to-end tests (Playwright) need the export
+pnpm build && pnpm budget     # gzipped JavaScript of every route in the export; a lesson page may load 150 KB
 pnpm build && pnpm lighthouse # Lighthouse (mobile) on the catalog and a lesson, and the JS budget
 ```
 
