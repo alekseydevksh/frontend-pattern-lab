@@ -70,9 +70,31 @@
   },
   "playerTest": {
     "title": "Player test page",
-    "description": "A dummy lesson that plays end to end. The end-to-end tests drive the player through this page.",
-    "diagramCaption": "Diagram",
+    "description": "A dummy lesson that plays end to end. The end-to-end tests drive the player through this page."
+  },
+  "lesson": {
+    "crumb": "{number}. {track} / Lesson {lesson} of {total}",
+    "minutes": "{minutes} min",
+    "stepCount": "{count} steps",
+    "stepCaption": "Step {current} / {total}",
     "keyIdea": "Key idea",
-    "lessonMeta": "{minutes} min · {level}"
+    "stepCardLabel": "Current step",
+    "takeawaysTitle": "You'll learn",
+    "takeawayReached": "reached",
+    "takeawayNotReached": "not reached yet",
+    "codeLabel": "Code example"
+  },
+  "siteNav": {
+    "brand": "Pattern Lab",
+    "label": "Lessons"
+  },
+  "footer": {
+    "intro": "Original explanations of ideas from",
+    "articleTitle": "Frontend System Design Patterns for Large-Scale React Applications",
+    "articleUrl": "https://medium.com/@dmitriilobanov3/frontend-system-design-patterns-for-large-scale-react-applications-699ef9bb3b1d",
+    "by": "by Dmitrii Lobanov. The step-by-step diagram format is inspired by",
+    "sampleName": "designed-to-scale.vercel.app",
+    "sampleUrl": "https://designed-to-scale.vercel.app",
+    "simulated": "Latencies in the diagrams are simulated."
   }
 }

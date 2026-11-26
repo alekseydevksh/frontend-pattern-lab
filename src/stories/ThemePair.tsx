@@ -7,9 +7,16 @@ const themes = ['light', 'dark'] as const;
  * single story shows both. Each half sets its own data-theme, which redefines every token
  * for the elements inside it (see src/styles/tokens.css).
  */
-export function ThemePair({ children }: { children: ReactNode }) {
+export function ThemePair({
+  children,
+  stacked = false,
+}: {
+  children: ReactNode;
+  /** One above the other instead of side by side, for content that needs the full width. */
+  stacked?: boolean;
+}) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className={stacked ? 'grid gap-4' : 'grid gap-4 md:grid-cols-2'}>
       {themes.map((theme) => (
         <div
           key={theme}
