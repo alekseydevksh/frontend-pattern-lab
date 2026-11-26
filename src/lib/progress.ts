@@ -126,16 +126,23 @@ export type ProgressState =
   | { kind: 'started'; step: number; stepCount: number }
   | { kind: 'completed'; stepCount: number };
 
-/** What a catalog card says about a lesson. `step` counts from 1. */
+/**
+ * What a catalog card says about a lesson, from the lesson's slug and step count alone, so a
+ * card does not need the lesson's content. `step` counts from 1. A saved step beyond the end
+ * (the lesson got shorter) is clamped.
+ */
 export function progressState(
   progress: ProgressMap,
-  lesson: ProgressLesson | undefined,
+  lesson: { slug: string; stepCount: number } | undefined,
 ): ProgressState {
-  const saved = lesson ? progressFor(progress, lesson) : undefined;
-  if (!lesson || !saved) return { kind: 'none' };
-  const stepCount = lesson.steps.length;
-  if (saved.completed) return { kind: 'completed', stepCount };
-  return { kind: 'started', step: saved.step + 1, stepCount };
+  const saved = lesson && Object.hasOwn(progress, lesson.slug) ? progress[lesson.slug] : undefined;
+  if (!lesson || lesson.stepCount < 1 || !saved) return { kind: 'none' };
+  if (saved.completed) return { kind: 'completed', stepCount: lesson.stepCount };
+  return {
+    kind: 'started',
+    step: Math.min(saved.step, lesson.stepCount - 1) + 1,
+    stepCount: lesson.stepCount,
+  };
 }
 
 /* ---------- storage ---------- */

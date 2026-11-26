@@ -165,13 +165,16 @@ describe('recordStep', () => {
 });
 
 describe('progressState', () => {
+  const card = { slug: 'demo', stepCount: 6 };
+
   it('is none for a lesson that is not ready or not started', () => {
     expect(progressState({}, undefined)).toEqual({ kind: 'none' });
-    expect(progressState({}, lesson)).toEqual({ kind: 'none' });
+    expect(progressState({}, card)).toEqual({ kind: 'none' });
+    expect(progressState({}, { slug: 'toString', stepCount: 6 })).toEqual({ kind: 'none' });
   });
 
   it('counts the step from 1 while the lesson is in progress', () => {
-    expect(progressState(recordStep({}, lesson, 2), lesson)).toEqual({
+    expect(progressState(recordStep({}, lesson, 2), card)).toEqual({
       kind: 'started',
       step: 3,
       stepCount: 6,
@@ -179,10 +182,15 @@ describe('progressState', () => {
   });
 
   it('is completed once the last step has been reached', () => {
-    expect(progressState(recordStep({}, lesson, 5), lesson)).toEqual({
+    expect(progressState(recordStep({}, lesson, 5), card)).toEqual({
       kind: 'completed',
       stepCount: 6,
     });
+  });
+
+  it('clamps a saved step beyond the end of a lesson that got shorter', () => {
+    const saved = { demo: { step: 9, ticked: [], completed: false } };
+    expect(progressState(saved, card)).toEqual({ kind: 'started', step: 6, stepCount: 6 });
   });
 });
 
