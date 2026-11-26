@@ -1,3 +1,6 @@
+'use client';
+// A client module, so the lesson page can hand this scene to the player (D16).
+
 import type { Metric, SceneDefinition } from '@/engine/types';
 import { cx } from '@/lib/cx';
 import { format } from '@/lib/format';

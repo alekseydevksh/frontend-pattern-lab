@@ -1,11 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { dummyScene } from '@/components/scenes/dev/DummyScene';
-import { sceneRegistry } from '@/components/scenes/registry';
+import { lessons, sceneRegistry } from '@/components/scenes/registry';
 import { createManualClock } from '@/engine/testClock';
 import { useLessonPlayer } from '@/engine/useLessonPlayer';
 import { validateLesson } from '@/engine/validate';
-import { lessonLoaders } from '../lessons';
 import { dummyLesson } from './dummy-lesson';
 
 describe('the dummy lesson for the player test page', () => {
@@ -13,8 +12,8 @@ describe('the dummy lesson for the player test page', () => {
     expect(validateLesson(dummyLesson, { dummy: dummyScene })).toEqual([]);
   });
 
-  it('stays out of the lesson and scene registries, so it never reaches the catalog', () => {
-    expect(Object.keys(lessonLoaders)).not.toContain(dummyLesson.slug);
+  it('has no lesson page and is not in the scene registry, so it never reaches the catalog', () => {
+    expect(lessons.map((l) => l.slug)).not.toContain(dummyLesson.slug);
     expect(Object.keys(sceneRegistry)).not.toContain(dummyLesson.sceneId);
   });
 
