@@ -39,8 +39,19 @@ const baseState: OptimisticUiState = {
   serverNote: none,
   uiAt: null,
   serverAt: null,
+  uiShown: false,
+  serverShown: false,
   metrics: dashes,
 };
+
+/**
+ * Where the time markers stood when the step before ended. A step that follows starts with both
+ * hidden there, so they fade out where they stand instead of vanishing or sliding away (D14).
+ * Written per step because the engine rebuilds the state on every step; it is the position
+ * after a forward move, which is how the lesson is read.
+ */
+const markersLeftAt = (uiAt: number, serverAt: number) =>
+  ({ uiAt, serverAt }) satisfies Partial<OptimisticUiState>;
 
 /** The screen changes at once and the request leaves in the background (steps 2 to 4). */
 const likedAtOnce = {
@@ -49,6 +60,7 @@ const likedAtOnce = {
   value: '129',
   status: { text: 'Saving in background…', kind: 'wait' },
   uiAt: 0,
+  uiShown: true,
   metrics: [metric('0 ms'), metric('—'), metric('—')],
 } satisfies Partial<OptimisticUiState>;
 
@@ -100,6 +112,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
             serverValue: '129',
             serverNote: { text: 'saved', kind: 'ok' },
             serverAt: 600,
+            serverShown: true,
           },
           packet: { lane: 'main', dir: 'back', label: '200 OK', tone: 'res' },
         },
@@ -112,6 +125,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
             value: '129',
             status: { text: 'Saved', kind: 'ok' },
             uiAt: 600,
+            uiShown: true,
             metrics: [metric('600 ms'), metric('600 ms'), metric('—')],
           },
         },
@@ -134,6 +148,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
           'onLike() {\n  cache.set(post.id, withLike(post)); // screen changes now\n  api.like(post.id);                  // network catches up\n}',
       },
       takeawayIndex: 1,
+      startState: markersLeftAt(600, 600),
       sceneAlt:
         'The Like button turns to Liked and the count goes to 129 at once, while the POST request is still travelling to the server. The time strip marks the screen change at 0 ms and the server answer 600 ms later, and the status line moves from saving in the background to saved.',
       frames: [
@@ -148,6 +163,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
             serverValue: '129',
             serverNote: { text: 'saved', kind: 'ok' },
             serverAt: 600,
+            serverShown: true,
             metrics: [metric('0 ms'), metric('600 ms'), metric('no')],
           },
           packet: { lane: 'main', dir: 'back', label: '200 OK', tone: 'res' },
@@ -167,6 +183,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
       ],
       keyIdea: 'Optimism is a bet. Pay it back when you lose.',
       takeawayIndex: 2,
+      startState: markersLeftAt(0, 600),
       sceneAlt:
         'The button shows Liked at once, then the server answers 403 and rejects the change. The button goes back to Like, the count returns to 128, the status says Failed. Rolled back, and a red toast reads Could not like. Try again.',
       frames: [
@@ -177,7 +194,11 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
         },
         {
           at: 1200,
-          set: { serverNote: { text: 'rejected · 403', kind: 'bad' }, serverAt: 600 },
+          set: {
+            serverNote: { text: 'rejected · 403', kind: 'bad' },
+            serverAt: 600,
+            serverShown: true,
+          },
           packet: { lane: 'main', dir: 'back', label: '403', tone: 'bad' },
         },
         {
@@ -212,7 +233,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
       takeawayIndex: 2,
       sceneAlt:
         'The same failed like, now with a dashed snapshot strip under the post card that holds the old value, liked false and 128. After the 403 the card is restored from that snapshot, the status says so, and the error toast appears.',
-      startState: { snapshot: true },
+      startState: { ...markersLeftAt(0, 600), snapshot: true },
       frames: [
         {
           at: 300,
@@ -221,7 +242,11 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
         },
         {
           at: 1200,
-          set: { serverNote: { text: 'rejected · 403', kind: 'bad' }, serverAt: 600 },
+          set: {
+            serverNote: { text: 'rejected · 403', kind: 'bad' },
+            serverAt: 600,
+            serverShown: true,
+          },
           packet: { lane: 'main', dir: 'back', label: '403', tone: 'bad' },
         },
         {
@@ -252,6 +277,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
       sceneAlt:
         'A contract card with a Sign button and the value Unsigned. The button stays dashed and reads Signing… until the server confirms; only then does it show Signed and Done, and the server records the status as signed.',
       startState: {
+        ...markersLeftAt(0, 600),
         title: 'Contract #2041',
         button: 'Sign',
         value: 'Unsigned',
@@ -270,6 +296,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
             serverValue: 'signed',
             serverNote: { text: 'signature stored', kind: 'ok' },
             serverAt: 600,
+            serverShown: true,
           },
           packet: { lane: 'main', dir: 'back', label: '200 OK', tone: 'res' },
         },
@@ -282,6 +309,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
             value: 'Done',
             status: { text: 'Confirmed by server', kind: 'ok' },
             uiAt: 600,
+            uiShown: true,
             metrics: [metric('600 ms'), metric('600 ms'), metric('n/a')],
           },
         },
@@ -299,6 +327,7 @@ export const optimisticUi: Lesson<OptimisticUiState> = {
       ],
       keyIdea: 'Optimistic UI is a consistency strategy, not only a speed trick.',
       takeawayIndex: 3,
+      startState: markersLeftAt(600, 600),
       sceneAlt:
         'A table replaces the diagram. Liking a post, saving an item and marking a notification as read are marked optimistic; signing a document and sending a payment are marked pending state.',
       frames: [],
