@@ -459,7 +459,7 @@ Seven automated gates run on every pull request, and a change merges only when a
 - Lighthouse at least 95 for performance, accessibility and best practices on the catalog and on one lesson.
 - Largest Contentful Paint under 2.5 s on a throttled mobile profile.
 - Cumulative Layout Shift of 0 while a lesson plays.
-- Lesson page JavaScript under 150 KB gzipped, checked for every lesson route by `pnpm budget` in CI (D14). The catalog page stays close to zero client JavaScript of its own.
+- Lesson page JavaScript under 150 KB gzipped, checked for every lesson route by `pnpm budget` in CI (D14). The catalog page stays close to zero client JavaScript of its own, and under 145 KB gzipped in all, framework included (D15).
 
 **Scripts expected in `package.json`**
 
