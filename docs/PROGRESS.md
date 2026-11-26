@@ -90,7 +90,20 @@ Not a lesson: the five things the owner asked for before lesson 3 (D14).
 - [x] Checked at desktop (1280 px) and phone width (375 and 390 px): no layout shift, the step card keeps its
       height, the metric labels fit, the page never scrolls sideways; screenshots of every step in both themes
 - [x] Lesson page JavaScript 149.3 KB gzipped (limit 150 KB); catalog 139.2 KB (limit 145 KB)
-- [ ] The owner checks the look (owner checkpoint: the style of the new scenes)
+- [x] The owner checks the look (owner checkpoint: the style of the new scenes; accepted for lessons 4 to 6, D16)
+
+### M5 registry split acceptance criteria
+
+Not a lesson: the preparation the owner asked for before lesson 4 (D16).
+
+- [x] Each lesson page ships only its own scene: one route folder per lesson, no map of scenes in the browser
+- [x] Adding a lesson is one data file, one scene and one page file, plus the catalog entry; no registry lines
+      (`docs/ADDING_A_LESSON.md` and its new lesson procedure updated)
+- [x] `pnpm budget` fails a lesson page that carries or names another lesson's scene, and the catalog if it
+      carries or names any (`scripts/js-budget.test.ts`; also checked by breaking a real build two ways)
+- [x] Lesson pages 146.3, 146.3 and 147.1 KB gzipped (before: 148.6, 148.5, 149.3; limit 150 KB); catalog
+      139.2 KB (limit 145 KB)
+- [x] `src/engine` unchanged; lint, types, unit, end-to-end, axe, Storybook build and Lighthouse pass
 
 ## Lessons
 

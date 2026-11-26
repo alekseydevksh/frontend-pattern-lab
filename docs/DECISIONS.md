@@ -590,3 +590,91 @@ the code every lesson page shares, and each entry adds a `next/dynamic` wrapper.
 still to come add about 0.9 KB to every page, so a lesson 12 scene the size of this one (2.2 KB) would come
 to about 150.2 KB, over the limit. This is a projection, not a measurement. See the open questions in the
 pull request.
+
+## D16. One route per lesson, so a lesson page ships only its own scene (2026-11-27)
+
+No dependency was added. `src/engine/` is unchanged (`git diff main -- src/engine` is empty). Owner answers to
+the lesson 3 questions, recorded:
+
+1. **Split the registry** so that each lesson page ships only its own scene's entry: done, as below.
+2. The scene style of lesson 3 is accepted for lessons 4 to 6.
+3. The containment step stays: lesson 3 keeps seven steps.
+
+**What was wrong.** Every lesson page loaded the whole scene registry: one `next/dynamic` wrapper per scene
+and the loaders of every scene's chunk, in the code all lesson pages share. Each entry was in fact two chunks,
+not one: `load` and `View` each got a chunk of their own, so the comment that said "one chunk per scene" was
+wrong, and both loaders shipped.
+
+**What I proposed in the lesson 3 pull request does not work.** I suggested that the server page pass only
+its own scene's view. I tried it in two forms, and in both, every scene ended up in every lesson page:
+
+- the scene module made a client module, loaded with `import()` on the server and passed to the player
+  (0 files of its own per page, 148.7 KB each);
+- `next/dynamic` called on the server, over one small client view per scene (0 files of its own, 150.2 KB
+  each, over the limit).
+
+Turbopack bundles every client module that one route can reach into that route's shared chunks, wherever the
+import is written. D14 had seen this with the first form. So on a single `/lessons/[slug]` route, only a map
+in client code can give each page its own chunk, and that map reaches every page.
+
+**What was done: a route folder per lesson.** `src/app/(site)/lessons/[slug]/` is replaced by one folder per
+lesson, `src/app/(site)/lessons/<slug>/page.tsx`. Each page file imports the lesson's data and its scene and
+passes them to `lessonPage` (`src/app/(site)/lessons/lessonPage.tsx`), which renders the header and
+`LessonRoute` as the old page did. Each route is bundled on its own, so a lesson page's JavaScript holds its
+own scene and nothing that names another, and `next/dynamic` and `bindScene` are gone. The URLs, the HTML, the
+sitemap and the next-lesson links are unchanged. The lesson route was allowed to change; nothing else on the
+page changed.
+
+- **Scene files start with `'use client'`**, with a comment saying why. On the server the scene is then a
+  client reference, which the page passes to `LessonRoute` as a prop, as D14 first tried. Scenes stay pure.
+- **`lessonPage<S>(lesson: Lesson<S>, scene: SceneDefinition<S>)`** only accepts a lesson and a scene with
+  the same state type. It throws for a lesson whose catalog entry is not ready, which fails the build.
+  `lessonMetadata(lesson)` gives the page's metadata from the catalog, as `generateMetadata` did.
+- **The registries are gone; the page file is the registration.** `content/lessons/index.ts` (the lesson
+  loaders) is deleted. `src/components/scenes/registry.ts` now reads every page file with Vite's
+  `import.meta.glob` and gives `lessonPages`, `lessons` and `sceneRegistry`, for tests and tools only.
+  The app never imports it. The engine's `sceneId` comment still points at it, and validation still checks
+  `sceneId` against it. Its type comes from `vite/types/import-meta.d.ts`, so Vite's asset typings do not
+  reach the app.
+- **Adding a lesson is simpler:** one data file, one scene and one page file (copy the previous one and
+  change two imports), plus the catalog entry. The two registry lines are gone. A ready entry with no page
+  fails `pnpm test`; a page whose entry is not ready fails the build.
+
+**The check: a lesson page carries its own scene and no other.** `pnpm budget` reads which scene each lesson
+page renders from the build's client reference manifests (`lessons/<slug>/page_client-reference-manifest.js`
+under `.next/server/app`, which lists `src/components/scenes/<Name>Scene.tsx` with its module id).
+It then looks for every scene's module in the JavaScript each page loads, where the bundler writes it as
+`,<id>,e=>{`. It fails:
+
+- a lesson page that carries another lesson's scene;
+- a lesson page that names a file holding another lesson's scene, which is what a map of loaders does;
+- a lesson page that does not carry its own scene, or whose page imports no scene or two (the check would
+  otherwise be blind);
+- the catalog carrying or naming any scene;
+- a build with no manifest for a lesson page.
+
+I broke the split two ways on a real build to check that it fails: a shared client module importing one scene
+("includes another lesson's scene") and the same module able to `import()` it on demand ("can load another
+lesson's scene"). Both failed with the page and the scene named. `scripts/js-budget.test.ts` covers each case
+with fake builds. The check reads Next.js's build files, so a change in how Next.js writes them could break
+it. If that happens it fails ("no client reference manifest", "does not include its own scene"); it does not
+pass silently.
+
+**JavaScript per route, from the export** (gzipped, level 9):
+
+| Route                      | Before (main)      | After (this branch) | Of which its own file   |
+| -------------------------- | ------------------ | ------------------- | ----------------------- |
+| `/` (catalog)              | 139.2 KB, 8 files  | 139.2 KB, 8 files   | none, and no scene      |
+| `/lessons/optimistic-ui/`  | 148.6 KB, 10 files | 146.3 KB, 8 files   | 8.7 KB (before: 1.5 KB) |
+| `/lessons/push-pull-sync/` | 148.5 KB, 10 files | 146.3 KB, 8 files   | 8.6 KB (before: 1.4 KB) |
+| `/lessons/virtualization/` | 149.3 KB, 10 files | 147.1 KB, 8 files   | 9.4 KB (before: 2.2 KB) |
+
+Every lesson page is **2.2 to 2.3 KB lighter**: the registry, the `next/dynamic` runtime and one file are gone.
+A new lesson now adds nothing to the other pages. Lesson 3 has 2.9 KB to spare instead of 0.7 KB. The other
+pages carry about 144.8 KB besides their scene, so a scene of up to about 5 KB gzipped (twice lesson 3's)
+fits. That is an estimate from these numbers, not a measurement.
+
+- **A cost:** a page's own file is now larger, because it holds the lesson shell as well as the scene. The
+  shell is in each route's file and not in a file the lesson pages share, so going from one lesson to the next
+  in the browser downloads about 8.6 KB instead of about 1.5 KB. The first visit to any lesson is 2.2 KB
+  lighter. I think that is the right trade for a site that people mostly open one lesson at a time.
