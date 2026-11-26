@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { Metric, SceneDefinition } from '@/engine/types';
 import { cx } from '@/lib/cx';
 import { format } from '@/lib/format';
@@ -51,9 +50,17 @@ export interface OptimisticUiState {
   serverKey: string;
   serverValue: string;
   serverNote: Status;
-  /** Milliseconds, on the time strip, at which the screen changed / the server answered. */
+  /**
+   * Where the two markers on the time strip stand, in milliseconds: when the screen changed and
+   * when the server answered. `null` until a marker has been placed, and then it waits at the
+   * left edge. A marker that is not shown keeps its position (and so its text), so it fades out
+   * where it stands; the lesson data says where, step by step (D14).
+   */
   uiAt: number | null;
   serverAt: number | null;
+  /** Whether each marker is visible. */
+  uiShown: boolean;
+  serverShown: boolean;
   /** The three metrics above the diagram, so the lesson data says what they show. */
   metrics: [Metric, Metric, Metric];
 }
@@ -75,73 +82,50 @@ const status = 'font-body text-[12.5px] font-medium transition-[fill] duration-(
 const fade = 'transition-opacity duration-300';
 
 /** Where a time marker sits on the strip, and which way its label leans so it stays inside. */
-function markerPlacement(ms: number) {
+function markerPlacement(ms: number | null) {
+  // A marker that has not been placed yet waits at the left edge, as the prototype's does.
+  if (ms === null) return { x: 0, anchor: 'middle', labelX: 0 } as const;
   const x = AXIS.x1 + (ms / AXIS.maxMs) * (AXIS.x2 - AXIS.x1);
   const edge = x < 110 ? 'start' : x > 520 ? 'end' : 'middle';
   return { x, anchor: edge, labelX: edge === 'start' ? -8 : edge === 'end' ? 8 : 0 } as const;
 }
 
-/** What a marker keeps showing while it fades out: where it was, and what it said. */
-interface MarkerLook {
-  x: number;
-  anchor: 'start' | 'middle' | 'end';
-  labelX: number;
-  label: string;
-}
-
 /**
- * A marker on the time strip. As in the prototype, a marker that goes away fades out where it
- * stands and keeps its text, instead of sliding to the edge with an empty label. What it shows
- * while hidden is not visible, so the picture still depends only on the state; the marker keeps
- * its last look only so the fade has something to fade. It is a presentation detail, recorded
- * in D13. A marker that has never been shown waits at x = 0, as the prototype's does.
+ * A marker on the time strip. Pure: where it stands, what it says and whether it shows all come
+ * from the state. As in the prototype, a marker that goes away fades out where it stands and
+ * keeps its text, because the state keeps its position while `shown` is false; the CSS
+ * transition does the fading and the sliding.
  */
 function Marker({
   at,
+  shown,
   label,
   tone,
   below,
 }: {
   at: number | null;
+  shown: boolean;
   label: string;
   tone: 'req' | 'res';
   below: boolean;
 }) {
-  const [last, setLast] = useState<MarkerLook>({
-    x: 0,
-    anchor: 'middle',
-    labelX: 0,
-    label: '',
-  });
-  let look = last;
-  if (at !== null) {
-    const { x, anchor, labelX } = markerPlacement(at);
-    look = { x, anchor, labelX, label };
-    if (
-      look.x !== last.x ||
-      look.anchor !== last.anchor ||
-      look.labelX !== last.labelX ||
-      look.label !== last.label
-    ) {
-      setLast(look);
-    }
-  }
+  const { x, anchor, labelX } = markerPlacement(at);
   return (
     <g
       className="transition-[transform,opacity] duration-[500ms,300ms] ease-[ease]"
-      style={{ opacity: at === null ? 0 : 1, transform: `translate(${look.x}px, 0)` }}
+      style={{ opacity: shown ? 1 : 0, transform: `translate(${x}px, 0)` }}
     >
       <circle cy={AXIS.y} r={6} className={tone === 'req' ? 'fill-req' : 'fill-res'} />
       <text
-        x={look.labelX}
+        x={labelX}
         y={below ? AXIS.y + 22 : AXIS.y - 16}
-        textAnchor={look.anchor}
+        textAnchor={anchor}
         className={cx(
           'font-mono text-label font-medium',
           tone === 'req' ? 'fill-req-text' : 'fill-res-text',
         )}
       >
-        {look.label}
+        {label}
       </text>
     </g>
   );
@@ -251,12 +235,14 @@ function OptimisticUiDrawing({ state }: { state: OptimisticUiState }) {
       </text>
       <Marker
         at={state.uiAt}
+        shown={state.uiShown}
         label={marker(labels.uiChanges, state.uiAt)}
         tone="req"
         below={false}
       />
       <Marker
         at={state.serverAt}
+        shown={state.serverShown}
         label={marker(labels.serverAnswers, state.serverAt)}
         tone="res"
         below

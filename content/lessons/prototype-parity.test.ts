@@ -18,7 +18,11 @@ import { pushPullSync } from './push-pull-sync';
  *  - the prototype tone 'mut' is 'neutral';
  *  - the prototype's body is HTML paragraphs, the port's is an array of strings;
  *  - the prototype's scene state has short names; the port's has readable ones, and carries
- *    its labels in the state.
+ *    its labels in the state;
+ *  - an accepted difference (D14): the prototype hides a time marker by setting its time to
+ *    null and remembers where it stood in the page; the port keeps that position in the state
+ *    and sets `uiShown` / `serverShown` to false. Both are compared as what is visible: a marker
+ *    that is not shown counts as null.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -74,6 +78,8 @@ function portState1(s: Proto) {
     serverNote: status(s.srvNote),
     uiAt: s.tUi,
     serverAt: s.tSrv,
+    uiShown: s.tUi !== null,
+    serverShown: s.tSrv !== null,
     metrics: s.m.map((v: string) => (v === 'yes' ? { value: v, tone: 'bad' } : { value: v })),
   };
 }
@@ -88,6 +94,19 @@ const portState2 = (s: Proto) => ({
   event: s.event,
 });
 const toPortState = [portState1, portState2];
+
+/**
+ * What the port's state shows, in the prototype's terms: a time marker that is hidden is null,
+ * wherever its position is kept (D14). The second scene has no markers.
+ */
+const asShown = [
+  (state: Proto) => ({
+    ...state,
+    uiAt: state.uiShown ? state.uiAt : null,
+    serverAt: state.serverShown ? state.serverAt : null,
+  }),
+  (state: Proto) => state,
+];
 
 /** The state fields a frame can change are compared; labels never change and are not. */
 function without<T extends object>(state: T, ...keys: string[]) {
@@ -139,7 +158,9 @@ describe.each([0, 1])('prototype lesson %i against the port', (index) => {
       let protoState = Object.assign(protoScene.base(), ps.base ?? {});
       let portState = startStateOf(lesson, step);
       const compare = (when: string) =>
-        expect(without(portState, 'labels', 'docs'), when).toEqual(convert(protoState));
+        expect(asShown[index]!(without(portState, 'labels', 'docs')), when).toEqual(
+          convert(protoState),
+        );
       compare(`step ${i + 1} start`);
 
       ps.frames.forEach((pf: Proto, f: number) => {
