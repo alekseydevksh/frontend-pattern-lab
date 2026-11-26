@@ -678,3 +678,70 @@ fits. That is an estimate from these numbers, not a measurement.
   shell is in each route's file and not in a file the lesson pages share, so going from one lesson to the next
   in the browser downloads about 8.6 KB instead of about 1.5 KB. The first visit to any lesson is 2.2 KB
   lighter. I think that is the right trade for a site that people mostly open one lesson at a time.
+
+## D17. Lesson 4, Normalized Data (2026-11-27)
+
+No dependency was added. `src/engine/` is unchanged (`git diff main -- src/engine` is empty). The lesson is
+one data file, one scene, one page file and the catalog entry, as D16 describes; nothing else in `src/` or
+`content/` changed.
+
+**Choices the spec did not settle**
+
+- **Six steps, the outline's six.** Repeated user, stale rename, store by id, one write, what a query library
+  leaves to you, and the test question (the verdict table).
+- **The scene is a small simulation**: one user (`u1`, "Mira Lund", renamed to "Mira Vale") and three places that
+  mention them. Three columns as the outline says: the nested response on the left, the store in the middle,
+  three views (feed, profile, comments) on the right. The store shows one copy of the user per response, or one
+  `users` record with three references (a spine joins each reference to the record). Below the response is an
+  update card (the rename the server announces); below the views is a cache-plan panel that only step 5 lights.
+- **"Stale" is a word, not only a colour.** A stored copy, the record or a view whose name differs from the
+  server's (`latest`) is drawn in red with a `STALE` tag, so the state does not rest on colour alone.
+- **The rename is stale from the moment the server announces it**, not from the moment the store gets it. In step
+  2 and step 4 the copies and the views read STALE while the `rename` packet is in flight, which is the honest
+  picture ("the browser is behind"). In step 4 that is what lets one packet visibly fix all three views.
+- **Metrics follow the outline** (copies of the user, views in sync, writes needed), all computed from the state,
+  so the lesson data holds no metric values. "Writes needed" is the number of stored places that do not hold the
+  server's name yet: 0 before a rename, 3 then 2 in step 2 (one copy patched, two left), 1 then 0 in step 4. It
+  is not the same number as the copies. A view that has not rendered yet is blank, not stale, so loading never
+  shows "1 of 3" in red.
+- **The store holds copies and a record separately** (`names` and `entity`) and the views hold what they show
+  (`view`), so a packet from the store to a view has something to change. A step that starts in the by-id mode
+  sets `names` to empty, so no stale copy hides in the faded-out half of the drawing.
+- **Each step starts from a clean state, as in lesson 3.** Step 3 does not start from step 2's stale views,
+  because normalizing a store that already disagrees would raise the question of which copy wins, which the
+  lesson is not about.
+- **Numbers and names.** The user, the id and the names are made up; the drawing says "illustrative data" and
+  step 1's text says so. No source text or example from the article or the sample site is used: the user,
+  the three-panel layout and the steps' wording are written for this project from the outline.
+- **Code samples** are `ts` and `json` (four to six lines each), written for this project.
+- **Verdict tones.** "Normalize" is `warn` (it needs an action and a design), "Keep nested" is `ok`, as lesson 3
+  marks "Virtualize" `warn`.
+- **Layout.** The viewBox is 640 by 380, a little taller than lesson 3's 352, for a bottom row (update card,
+  user record, cache plan). Lanes: `load0` to `load2` (response to store, one per row), `write` (update to store)
+  and `read0` to `read2` (store to views). Colours keep their meaning: teal for the server's data and the
+  one record, violet for the update, red for stale and for the missing shared record.
+
+**Tests**
+
+- `src/components/scenes/NormalizedDataScene.test.tsx`: the three counts, the metrics and their tones, the stale
+  words, the record and references, the plan, and the same picture for the same state.
+- `e2e/lesson-04-normalized-data.spec.ts`: the whole lesson with the keyboard against a frozen clock (metrics and
+  stale counts after the frames, the packets, the verdict table, back to step 1), the takeaways, Space and R,
+  reduced motion, 375 px, and axe in both themes on every step and with a packet in flight. The shared checks
+  (step card, layout shift at desktop and phone, metric labels at 375 px, catalog and next-lesson) pick the
+  lesson up from the catalog.
+
+**JavaScript per route, from the export** (gzipped, level 9):
+
+| Route                       | Before (main)     | After (this branch) | Of which its own file |
+| --------------------------- | ----------------- | ------------------- | --------------------- |
+| `/` (catalog)               | 139.2 KB, 8 files | 139.2 KB, 8 files   | none, and no scene    |
+| `/lessons/optimistic-ui/`   | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.7 KB                |
+| `/lessons/push-pull-sync/`  | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.6 KB                |
+| `/lessons/virtualization/`  | 147.1 KB, 8 files | 147.1 KB, 8 files   | 9.4 KB                |
+| `/lessons/normalized-data/` | none              | 146.8 KB, 8 files   | 9.2 KB                |
+
+No other page changed in size. The new page has 3.2 KB to spare.
+
+**Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices
+100, LCP 0.75 s, CLS 0.000, total blocking time 38 ms.
