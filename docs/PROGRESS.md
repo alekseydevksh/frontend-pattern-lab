@@ -11,7 +11,7 @@ check, tests and build pass. Never tick on a guess.
 - [x] M3 Port lessons 1 and 2
 - [x] M4 App shell
 - [ ] M5 New lessons 3 to 12
-  - [ ] M5 prep: lazy scene loading, the JavaScript budget in CI, a step card that keeps its height, scene state in lesson data, the catalog in lesson order
+  - [x] M5 prep: lazy scene loading, the JavaScript budget in CI, a step card that keeps its height, scene state in lesson data, the catalog in lesson order
 - [ ] M6 Polish and launch
 
 ### M0 acceptance criteria
@@ -70,16 +70,16 @@ check, tests and build pass. Never tick on a guess.
 
 Not a lesson: the five things the owner asked for before lesson 3 (D14).
 
-- [ ] A lesson page loads only its own scene and lesson data, the catalog only the catalog entries, the
+- [x] A lesson page loads only its own scene and lesson data, the catalog only the catalog entries, the
       first paint is the full start state from the server, and nothing shifts (the export's lesson pages
       each load a scene file of their own; the catalog loads none)
-- [ ] The 150 KB gzipped lesson JavaScript limit is a CI step (`pnpm budget`), measured per route from the
+- [x] The 150 KB gzipped lesson JavaScript limit is a CI step (`pnpm budget`), measured per route from the
       export: catalog 139.2 KB, lessons 148.5 KB and 148.4 KB (before: 139.2, 147.1, 147.1)
-- [ ] The step card keeps its height: the elements below it do not move between steps, on desktop and
+- [x] The step card keeps its height: the elements below it do not move between steps, on desktop and
       phone, for both lessons (`e2e/step-card.spec.ts`), and a screen reader hears each step once
-- [ ] Scenes hold no state: the time markers' position is in the lesson data; the prototype parity test
+- [x] Scenes hold no state: the time markers' position is in the lesson data; the prototype parity test
       passes with one recorded difference
-- [ ] The catalog is one list in lesson order, numbered 1 to 12, with the track as a label on each card
+- [x] The catalog is one list in lesson order, numbered 1 to 12, with the track as a label on each card
 
 ## Lessons
 
