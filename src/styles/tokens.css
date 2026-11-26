@@ -22,6 +22,7 @@
   --res: #0d8587;
   --ev: #6c4fe0;
   --bad: #c42248;
+  --on-signal: #ffffff;
   --shadow: 0 1px 0 rgb(22 33 58 / 6%), 0 10px 28px -14px rgb(22 33 58 / 28%);
   color-scheme: light;
 }
@@ -39,6 +40,7 @@
     --res: #38c3c5;
     --ev: #a592ff;
     --bad: #ff6384;
+    --on-signal: #0c1426;
     --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 10px 28px -14px rgb(0 0 0 / 60%);
     color-scheme: dark;
   }
@@ -56,6 +58,7 @@
   --res: #38c3c5;
   --ev: #a592ff;
   --bad: #ff6384;
+  --on-signal: #0c1426;
   --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 10px 28px -14px rgb(0 0 0 / 60%);
   color-scheme: dark;
 }
@@ -78,6 +81,15 @@
   --ev-text: color-mix(in srgb, var(--ev) 70%, var(--ink));
   --bad-text: color-mix(in srgb, var(--bad) 70%, var(--ink));
 }
+
+/*
+ * --on-signal is the colour of text that sits on a filled signal colour (a toast, a badge).
+ * It is white in the light theme and the dark paper colour in the dark theme, because the
+ * dark theme's signal colours are light. It is held to 4.5:1 on the fills it is used on by
+ * src/styles/contrast.test.ts. Which fills those are is decided in D12 of docs/DECISIONS.md:
+ * the light theme's raw --req and --res are too pale for white text, so a badge in those
+ * colours is filled with the matching -text shade instead.
+ */
 
 /* Fonts. The --font-* variables on <html> come from next/font (see src/lib/fonts.ts). */
 :root {
@@ -103,6 +115,7 @@
   --color-res-text: var(--res-text);
   --color-ev-text: var(--ev-text);
   --color-bad-text: var(--bad-text);
+  --color-on-signal: var(--on-signal);
 
   --font-display: var(--display);
   --font-body: var(--body);
