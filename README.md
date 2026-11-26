@@ -3,7 +3,7 @@
 Short animated lessons on frontend architecture patterns for large React applications.
 Each lesson teaches one idea that you step through as a diagram, in about five minutes.
 
-> **Status:** under construction. Milestones M0 (bootstrap) and M1 (tokens, base UI and Storybook). See [docs/PROGRESS.md](docs/PROGRESS.md).
+> **Status:** under construction. Milestones M0 (bootstrap), M1 (tokens, base UI and Storybook) and M2 (lesson engine) are done. See [docs/PROGRESS.md](docs/PROGRESS.md).
 
 **Live site:** <https://frontend-pattern-lab.vercel.app>
 
