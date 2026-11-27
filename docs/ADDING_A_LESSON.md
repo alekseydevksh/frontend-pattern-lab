@@ -147,9 +147,13 @@ Content rules: original words only; take the idea from the spec outline, never c
 the source article or the sample site. A number drawn in a diagram is labelled illustrative or
 simulated: say so in the drawing (as lesson 3's "illustrative numbers") and in the first step's text.
 
+A metric value is at most seven characters (`7 of 7`, `4 hops`, `Inbox`), so it fits its tile on a 375 px
+phone. The shared metric tile does not change to fit a longer value: shorten the value instead.
+`e2e/metric-labels.spec.ts` checks every value at every step.
+
 These run for every ready lesson without being edited: content validation and the catalog test
 (`pnpm test`), the step card and layout-shift checks at desktop and phone width
-(`e2e/step-card.spec.ts`, `e2e/layout-shift.spec.ts`), the metric labels at 375 px
+(`e2e/step-card.spec.ts`, `e2e/layout-shift.spec.ts`), the metric labels and values at 375 px
 (`e2e/metric-labels.spec.ts`), the catalog, sitemap and next-lesson checks (`e2e/shell.spec.ts`), and
 the budget. The previous lesson's last step now offers this lesson: its spec reads the label from the
 catalog (`lastStepButton`), so it needs no edit either.
