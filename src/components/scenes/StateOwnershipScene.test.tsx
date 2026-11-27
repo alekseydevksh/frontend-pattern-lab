@@ -79,15 +79,23 @@ describe('the state ownership scene', () => {
   it('counts the homes in use, the unowned items and the hops', () => {
     expect(kindsInUse(base)).toBe(0);
     expect(unownedCount(base)).toBe(8);
-    expect(pathLength(base)).toEqual({ hops: 0, loops: false });
+    expect(pathLength(base)).toEqual({ hops: 0, troubled: false });
 
     expect(kindsInUse({ ...base, home: [0, null, null, null, null, 0, null, null] })).toBe(1);
     expect(unownedCount({ ...base, home: [0, null, null, null, null, 0, null, null] })).toBe(6);
 
     expect(kindsInUse(sorted)).toBe(5);
     expect(unownedCount(sorted)).toBe(0);
-    expect(pathLength(looped)).toEqual({ hops: 4, loops: true });
-    expect(pathLength(oneWay)).toEqual({ hops: 3, loops: false });
+    expect(pathLength(looped)).toEqual({ hops: 4, troubled: true });
+    expect(pathLength(oneWay)).toEqual({ hops: 3, troubled: false });
+    // One hop forward, but the copies already disagree.
+    const drifting: OwnershipState = {
+      ...base,
+      stations: stations(['done', 'drift', 'drift', 'idle']),
+      trail: [{ from: 0, to: 1 }],
+    };
+    expect(pathLength(drifting)).toEqual({ hops: 1, troubled: true });
+    expect(stateOwnershipScene.metrics(drifting)[2]).toEqual({ value: '1 hop', tone: 'bad' });
   });
 
   it('computes the metrics and marks them from the state', () => {
