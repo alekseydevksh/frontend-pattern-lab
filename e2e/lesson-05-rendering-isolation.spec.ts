@@ -21,7 +21,7 @@ import { storeTheme, waitForHydration } from './support';
  * Lesson 5, Rendering Isolation, played from the first step to the last with the keyboard alone,
  * against a frozen clock. Frame times are in content/lessons/rendering-isolation.ts. The step card
  * and layout-shift checks at desktop and phone width run for every ready lesson in step-card.spec.ts
- * and layout-shift.spec.ts; the metric labels at 375 px in metric-labels.spec.ts.
+ * and layout-shift.spec.ts; the metric labels and values at 375 px in metric-labels.spec.ts.
  */
 
 const URL = '/lessons/rendering-isolation/';
@@ -280,7 +280,8 @@ test.describe('lesson 5 on a phone (375 px)', () => {
     viewport: { width: 375, height: 812 },
   });
 
-  test('the page never scrolls sideways and every metric value fits its tile', async ({ page }) => {
+  // Whether every metric value fits its tile is checked for every lesson in metric-labels.spec.ts.
+  test('the page never scrolls sideways', async ({ page }) => {
     await page.goto(URL);
     await waitForHydration(page);
     for (let step = 1; step <= STEPS; step += 1) {
@@ -288,23 +289,6 @@ test.describe('lesson 5 on a phone (375 px)', () => {
       await expect(page.getByText(`Step ${step} of ${STEPS}`)).toBeVisible();
       const width = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(width, `step ${step}`).toBeLessThanOrEqual(375);
-      // A value that wrapped or stuck out would change the tile, or run into the next one.
-      const values = await page.locator('div[data-tone]').evaluateAll((tiles) =>
-        tiles.map((tile) => {
-          const value = tile.lastElementChild as HTMLElement;
-          const style = getComputedStyle(tile);
-          const room =
-            tile.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-          const range = document.createRange();
-          range.selectNodeContents(value);
-          const tops = new Set([...range.getClientRects()].map((r) => Math.round(r.top)));
-          return { text: value.textContent, fits: value.scrollWidth <= room, lines: tops.size };
-        }),
-      );
-      for (const v of values) {
-        expect(v.fits, `step ${step}: "${v.text}" is wider than its tile`).toBe(true);
-        expect(v.lines, `step ${step}: "${v.text}" wraps`).toBeLessThanOrEqual(1);
-      }
     }
   });
 });
