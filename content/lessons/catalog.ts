@@ -80,7 +80,9 @@ export const catalog: readonly CatalogRow[] = [
     summary:
       'Start from what the product must do and survive, then draw component layers around responsibilities.',
     track: 'Structure',
-    status: 'soon',
+    status: 'ready',
+    minutes: 5,
+    stepCount: 6,
   },
   {
     slug: 'container-view-viewmodel',
