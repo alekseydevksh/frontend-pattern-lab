@@ -61,7 +61,9 @@ export const catalog: readonly CatalogRow[] = [
     title: 'Rendering Isolation',
     summary: 'Stop a small change from re-rendering a whole tree by deciding where state lives.',
     track: 'Rendering and performance',
-    status: 'soon',
+    status: 'ready',
+    minutes: 5,
+    stepCount: 6,
   },
   {
     slug: 'state-ownership',
