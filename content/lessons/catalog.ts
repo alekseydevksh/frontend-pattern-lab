@@ -70,7 +70,9 @@ export const catalog: readonly CatalogRow[] = [
     title: 'State Ownership',
     summary: 'Sort state into five kinds, give each a home, and let updates travel one way.',
     track: 'Data and state',
-    status: 'soon',
+    status: 'ready',
+    minutes: 5,
+    stepCount: 6,
   },
   {
     slug: 'requirements-first',
