@@ -89,7 +89,9 @@ export const catalog: readonly CatalogRow[] = [
     title: 'Container, View, ViewModel',
     summary: 'Separate fetching, translating and drawing so each part can change on its own.',
     track: 'Structure',
-    status: 'soon',
+    status: 'ready',
+    minutes: 5,
+    stepCount: 6,
   },
   {
     slug: 'backend-for-frontend',
