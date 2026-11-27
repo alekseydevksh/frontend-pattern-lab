@@ -745,3 +745,82 @@ No other page changed in size. The new page has 3.2 KB to spare.
 
 **Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices
 100, LCP 0.75 s, CLS 0.000, total blocking time 38 ms.
+
+## D18. Lesson 5, Rendering Isolation, and the owner's answers to the lesson 4 questions (2026-11-27)
+
+No dependency was added. `src/engine/` is unchanged (`git diff main -- src/engine` is empty). The lesson is
+one data file, one scene, one page file and the catalog entry, as D16 describes; nothing else in `src/` or
+`content/` changed. Owner answers, recorded: lesson 4's cache plan stays in step 5, and that step names no
+library.
+
+**Choices the spec did not settle**
+
+- **Six steps, the outline's six.** The whole tree renders, move the state down, split a context, memoize on
+  purpose, shrink a needed render (virtualization and containment), and separation against isolation (the
+  verdict table).
+- **The scene is a small simulation**: the component tree of a chat screen, seven components, drawn from left
+  to right (root on the left), so the packets can travel along the middle row from `Input` up to `Form` and
+  `App` on horizontal lanes. `App` holds `Header`, `Form` and `Thread`; `Form` holds `Input` and `Send`;
+  `Thread` holds `Messages`. The tree's shape is a constant of the drawing, as lesson 3's row slots are; the
+  names, marks, counts, notes and contexts are all lesson data. Below the tree: a change card and a context
+  card (step 3 only). Beside it: lesson 3's bracket notes.
+- **What rendered is a word, not only a colour.** Each box counts its renders in the step (`×2`) and, after a
+  change, says what it did: `RENDERED` (orange border: it had something new to show, or it owns the state),
+  `WASTED` (red: it rendered and drew the same thing), or `SKIPPED` (dashed: a memo boundary stopped it). A box
+  with no word did not render.
+- **The mark stays until the next change** instead of flashing and fading. The outline says the counter
+  "flashes"; here the border and word fade in with the usual token transition and the count steps up. A mark
+  that faded away would leave nothing in the final state, which is all that reduced motion shows; this way
+  reduced motion shows exactly what rendered on the last change. A step that changes the structure (splitting
+  the context, a stable callback, containment) clears the marks, so the next change starts from a clean
+  picture and the metrics show "—" in between.
+- **Metrics follow the outline** and are all computed from the state. "Rendered per change" and "Wasted
+  renders" count the marks of the last change (wasted is rendered minus needed, as the owner suggested); "Where
+  the state lives" is the owning component, or the context that holds the value. All three are red while the
+  last change wasted renders and teal when it wasted none. The owner's own render counts as needed.
+- **Names fit a phone.** At 375 px a metric value has 73 px, which is seven characters of the metric font. So
+  the component that holds the field is `Form` (not `Composer`) and the contexts are `Global`, then `User` and
+  `Inbox` (the code calls them `GlobalContext` and so on); and the first metric is "Rendered per change", since
+  "Components" broke mid-word in a tile. The lesson's e2e test checks that every metric value fits its tile on
+  one line at every step at 375 px; it failed with `Composer`. The shared metric test checks labels only.
+- **Each step starts clean, with its own scenario**: the draft (steps 1 and 2), the unread count in a context
+  (step 3), an online flag that `Header` and `Form` both need, so it has to stay in `App` (step 4), and new
+  messages owned by `Thread` (step 5). In step 4 `Form` disables both the field and the button when offline,
+  so every component outside the memo boundary really needs the change and the fixed version wastes nothing.
+- **Step 5 is about a needed render.** The metrics do not move (2 of 7, none wasted); what changes is drawn in
+  the bracket: 2,000 rows at about 90 ms, then 20 of 2,000 rows at about 4 ms in a contained section. Those
+  numbers are simulated, and the drawing says "illustrative tree · simulated costs"; step 1 says so too.
+- **No library is named.** The code uses React's own `useState`, `createContext`, `memo` and `useCallback`,
+  which the lesson is about, and CSS `contain`; moving state down and splitting subscriptions are shown as
+  patterns. Code samples are four or five lines, written for this project.
+- **Verdict tones.** "Memoize it", "Window and contain" and "No runtime effect" are `warn` (each costs something
+  or fixes nothing); moving state, splitting a context and leaving a cheap component alone are `ok`.
+- **Colours keep their meaning**: orange for the work a change causes, red for waste, teal for where the state
+  lives (the `state:` chip, the context that holds it, a memo boundary that works, a contained section), violet
+  for changes that arrive from outside (an unread count, the connection, a new message), orange for typing.
+
+**Tests**
+
+- `src/components/scenes/RenderingIsolationScene.test.tsx`: the counts, the metrics and their tones, the words
+  on the boxes, the memo and contain boundaries, the contexts and the bracket notes, and the same picture for the
+  same state.
+- `e2e/lesson-05-rendering-isolation.spec.ts`: the whole lesson with the keyboard against a frozen clock (metrics
+  and marks after the frames, the packets, the verdict table, back to step 1), the takeaways, Space and R, reduced
+  motion, 375 px (no sideways scroll, every metric value fits its tile), and axe in both themes on every step and
+  with a packet in flight. The shared checks pick the lesson up from the catalog.
+
+**JavaScript per route, from the export** (gzipped, level 9):
+
+| Route                           | Before (main)     | After (this branch) | Of which its own file |
+| ------------------------------- | ----------------- | ------------------- | --------------------- |
+| `/` (catalog)                   | 139.2 KB, 8 files | 139.2 KB, 8 files   | none, and no scene    |
+| `/lessons/optimistic-ui/`       | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.7 KB                |
+| `/lessons/push-pull-sync/`      | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.6 KB                |
+| `/lessons/virtualization/`      | 147.1 KB, 8 files | 147.1 KB, 8 files   | 9.4 KB                |
+| `/lessons/normalized-data/`     | 146.8 KB, 8 files | 146.8 KB, 8 files   | 9.2 KB                |
+| `/lessons/rendering-isolation/` | none              | 147.0 KB, 8 files   | 9.3 KB                |
+
+No other page changed in size. The new page has 3.0 KB to spare.
+
+**Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices
+100, LCP 0.75 s, CLS 0.000, total blocking time 32 ms.
