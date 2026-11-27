@@ -2,17 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { optimisticUi } from '@content/lessons/optimistic-ui';
 import { optimisticUiScene, type OptimisticUiState } from './OptimisticUiScene';
+import { drawScene, expectSamePicture } from './sceneTest';
 
-const Scene = optimisticUiScene.Component;
 const base = optimisticUi.baseState as OptimisticUiState;
 
-function draw(state: OptimisticUiState) {
-  return (
-    <svg>
-      <Scene state={state} />
-    </svg>
-  );
-}
+const draw = (state: OptimisticUiState) => drawScene(optimisticUiScene, state);
 
 /** The marker group that holds a label: it carries the opacity and the position. */
 function markerOf(label: string) {
@@ -50,12 +44,9 @@ describe('time markers on the strip', () => {
 
   it('draws the same picture for the same state, wherever it has been before', () => {
     const visible = { ...base, uiAt: 600, serverAt: 600, uiShown: true, serverShown: true };
-    const fresh = render(draw(visible));
-    const direct = fresh.container.innerHTML;
-    fresh.unmount();
-    const walked = render(draw({ ...base, uiAt: 100, serverAt: null, uiShown: true }));
-    walked.rerender(draw({ ...base, uiAt: 100, uiShown: false }));
-    walked.rerender(draw(visible));
-    expect(walked.container.innerHTML).toBe(direct);
+    expectSamePicture(optimisticUiScene, visible, [
+      { ...base, uiAt: 100, serverAt: null, uiShown: true },
+      { ...base, uiAt: 100, uiShown: false },
+    ]);
   });
 });

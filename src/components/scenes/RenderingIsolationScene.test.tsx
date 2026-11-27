@@ -8,8 +8,8 @@ import {
   wastedCount,
   type IsolationState,
 } from './RenderingIsolationScene';
+import { drawScene, expectSamePicture, fadedText as faded } from './sceneTest';
 
-const Scene = renderingIsolationScene.Component;
 const base = renderingIsolation.baseState;
 
 /** Step 1 after a key press: the draft lives in App and the whole tree renders. */
@@ -27,31 +27,7 @@ const isolated: IsolationState = {
   renders: [0, 0, 1, 1, 1, 0, 0],
 };
 
-function draw(state: IsolationState) {
-  return (
-    <svg>
-      <Scene state={state} />
-    </svg>
-  );
-}
-
-/** Whether the group a piece of text sits in, or its parent group, is faded out. */
-const faded = (text: string) => {
-  const g = screen.getByText(text).closest('g')!;
-  return g.classList.contains('opacity-0') || g.parentElement!.classList.contains('opacity-0');
-};
-
-/** The markup with each element's attributes in a fixed order, so equal pictures compare equal. */
-function canonical(node: Element): string {
-  const attrs = [...node.attributes]
-    .map((a) => `${a.name}="${a.value}"`)
-    .sort()
-    .join(' ');
-  const inner = [...node.childNodes]
-    .map((child) => (child instanceof Element ? canonical(child) : child.textContent))
-    .join('');
-  return `<${node.tagName} ${attrs}>${inner}</${node.tagName}>`;
-}
+const draw = (state: IsolationState) => drawScene(renderingIsolationScene, state);
 
 describe('the rendering isolation scene', () => {
   it('counts the components rendered, the wasted renders and where the state lives', () => {
@@ -161,13 +137,10 @@ describe('the rendering isolation scene', () => {
 
   it('draws the same picture for the same state, wherever it has been before', () => {
     const target: IsolationState = { ...isolated, memo: 'leaky', contained: true };
-    const fresh = render(draw(target));
-    const direct = canonical(fresh.container);
-    fresh.unmount();
-    const walked = render(draw(base));
-    walked.rerender(draw(wholeTree));
-    walked.rerender(draw({ ...wholeTree, memo: 'stable' }));
-    walked.rerender(draw(target));
-    expect(canonical(walked.container)).toBe(direct);
+    expectSamePicture(renderingIsolationScene, target, [
+      base,
+      wholeTree,
+      { ...wholeTree, memo: 'stable' },
+    ]);
   });
 });
