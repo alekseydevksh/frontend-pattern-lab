@@ -309,8 +309,8 @@ describe('scripts/js-budget.mjs: each lesson page carries its own scene and no o
       defines: { '_next/static/chunks/alpha.js': [101], '_next/static/chunks/beta.js': [202] },
     });
     const { code, out } = run(dir);
-    expect(out).toMatch(/\/lessons\/alpha\/ .*scene AlphaScene/);
-    expect(out).toMatch(/\/lessons\/beta\/ .*scene BetaScene/);
+    expect(out).toMatch(/\| `\/lessons\/alpha\/` .*`AlphaScene` \|/);
+    expect(out).toMatch(/\| `\/lessons\/beta\/` .*`BetaScene` \|/);
     expect(code).toBe(0);
   });
 

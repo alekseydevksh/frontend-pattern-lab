@@ -4,7 +4,7 @@
 // <script> and preload tags of the built HTML and compresses each file with node:zlib, as a host
 // would on the wire.
 //
-//   node scripts/js-budget.mjs            # report and check
+//   node scripts/js-budget.mjs            # the size table (markdown), then the check
 //   node scripts/js-budget.mjs --json     # machine-readable
 //
 // The routes are found in the export, not listed here: the catalog is `index.html`, and every
@@ -247,16 +247,23 @@ if (process.argv.includes('--json')) {
     ),
   );
 } else {
-  const kb = (bytes) => (bytes / KB).toFixed(1).padStart(6);
-  for (const r of routes) {
-    const limit = `limit ${(r.limit / KB).toFixed(0)} KB`;
-    const own = r.own ? `, ${kb(r.ownGzip)} KB of them its own (${r.own.length} files)` : '';
-    const scene = r.scene ? `, scene ${basename(r.scene.file, '.tsx')}` : '';
-    console.log(
-      `${r.path.padEnd(28)} ${kb(r.gzip)} KB gzipped JS in ${r.files.length} files${own}${scene} ` +
-        `(${limit})${r.over ? '  OVER BUDGET' : ''}`,
-    );
-  }
+  // The size table, in markdown: it reads in a terminal and pastes into a pull request as it is.
+  const kb = (bytes) => `${(bytes / KB).toFixed(1)} KB`;
+  const rows = routes.map((r) => [
+    `\`${r.path}\`${r.label === 'catalog' ? ' (catalog)' : ''}`,
+    r.over ? `**${kb(r.gzip)} OVER**` : kb(r.gzip),
+    `${(r.limit / KB).toFixed(0)} KB`,
+    String(r.files.length),
+    r.own ? `${kb(r.ownGzip)} (${r.own.length} ${r.own.length === 1 ? 'file' : 'files'})` : 'none',
+    r.scene ? `\`${basename(r.scene.file, '.tsx')}\`` : 'none',
+  ]);
+  const head = ['Route', 'Gzipped JS', 'Limit', 'Files', 'Its own file', 'Scene'];
+  const widths = head.map((h, i) => Math.max(h.length, ...rows.map((row) => row[i].length)));
+  const line = (cells) => `| ${cells.map((c, i) => c.padEnd(widths[i])).join(' | ')} |`;
+  // A right-aligned number column: the colon marks it, and the rule is as wide as the column.
+  const rule = widths.map((w, i) => (i >= 1 && i <= 4 ? `${'-'.repeat(w - 1)}:` : '-'.repeat(w)));
+  console.log([line(head), `| ${rule.join(' | ')} |`, ...rows.map(line)].join('\n'));
+  console.log('');
   for (const problem of problems) console.error(`FAIL: ${problem}`);
   if (problems.length === 0) console.log('JavaScript budget: ok');
 }
