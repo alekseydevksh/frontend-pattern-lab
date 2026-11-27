@@ -116,13 +116,24 @@ Not a lesson: the preparation the owner asked for before lesson 4 (D16).
 - [x] Lesson page JavaScript 146.8 KB gzipped (limit 150 KB); no other page changed in size
 - [ ] The owner checks the look (screenshots: see the pull request)
 
+### Lesson 5 acceptance criteria
+
+- [x] Content validation passes (`pnpm test`: `content/lessons/lessons.test.ts` and the catalog test)
+- [x] The end-to-end test plays it from the first step to the last with the keyboard, and checks the metrics,
+      the render marks and the verdict table (`e2e/lesson-05-rendering-isolation.spec.ts`)
+- [x] axe is clean in both themes, on the final state of every step and with a packet in flight
+- [x] Checked at desktop (1280 px) and phone width (375 px): no layout shift, the step card keeps its height,
+      the metric labels and values fit, the page never scrolls sideways; screenshots of every step in both themes
+- [x] Lesson page JavaScript 147.0 KB gzipped (limit 150 KB); no other page changed in size
+- [ ] The owner checks the look (screenshots: see the pull request)
+
 ## Lessons
 
 - [x] 1. Optimistic UI
 - [x] 2. Push + Pull Sync
 - [x] 3. Virtualization
 - [x] 4. Normalized Data
-- [ ] 5. Rendering Isolation
+- [x] 5. Rendering Isolation
 - [ ] 6. State Ownership
 - [ ] 7. Requirements First and Component Boundaries
 - [ ] 8. Container, View, ViewModel
