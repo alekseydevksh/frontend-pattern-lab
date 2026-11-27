@@ -12,7 +12,7 @@ check, tests and build pass. Never tick on a guess.
 - [x] M4 App shell
 - [ ] M5 New lessons 3 to 12
   - [x] M5 prep: lazy scene loading, the JavaScript budget in CI, a step card that keeps its height, scene state in lesson data, the catalog in lesson order
-  - [ ] M5 tooling: shared end-to-end checks fed by lesson data, a shared scene module and scene test helpers, the budget as a markdown table, a lesson pull request template, `pnpm check:lesson`, and the two-lessons-at-a-time flow (D20)
+  - [x] M5 tooling: shared end-to-end checks fed by lesson data, a shared scene module and scene test helpers, the budget as a markdown table, a lesson pull request template, `pnpm check:lesson`, and the two-lessons-at-a-time flow (D20)
 - [ ] M6 Polish and launch
 
 ### M0 acceptance criteria
@@ -143,15 +143,15 @@ Not a lesson: the preparation the owner asked for before lesson 4 (D16).
 
 Not a lesson: the preparation the owner asked for before lessons 7 to 12 (D20).
 
-- [ ] The rendered SVG of every step and frame of lessons 1 to 6 is identical before and after (160 states, compared
+- [x] The rendered SVG of every step and frame of lessons 1 to 6 is identical before and after (160 states, compared
       byte for byte; the built pages and the CSS are identical too)
-- [ ] The shared checks still catch broken lessons: a takeaway index out of range or out of order, a metric value
+- [x] The shared checks still catch broken lessons: a takeaway index out of range or out of order, a metric value
       that is too long, a missing `sceneAlt`, and a scene that imports another lesson each fail a check (D20 lists
       each and what failed)
-- [ ] No page grew: every lesson page and the catalog have the same size in bytes as on `main` (lessons 3 to 6 do not
+- [x] No page grew: every lesson page and the catalog have the same size in bytes as on `main` (lessons 3 to 6 do not
       use the shared scene module, because that would grow them: D20)
-- [ ] `src/engine` unchanged, no dependency added, no lesson text changed
-- [ ] Lint, types, formatting, unit, end-to-end, budget, Storybook build and Lighthouse pass (`pnpm check:lesson`)
+- [x] `src/engine` unchanged, no dependency added, no lesson text changed
+- [x] Lint, types, formatting, unit, end-to-end, budget, Storybook build and Lighthouse pass (`pnpm check:lesson`)
 
 ### M6 acceptance criteria
 
