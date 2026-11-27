@@ -8,7 +8,6 @@ import {
   MICRO_CHAR,
   cap,
   ease,
-  microWidth,
   note,
   panel,
   small,
@@ -110,6 +109,13 @@ const noteTone = { bad: 'bad', good: 'res', muted: 'muted' } as const satisfies 
   ToneKey
 >;
 const kindTone = ['req', 'ev'] as const satisfies readonly ToneKey[];
+
+/**
+ * The width of a chip around `text` in the micro mono size. Written out here and not imported from
+ * `sceneKit`: a function that two lesson pages share is put in a chunk of its own, which costs each
+ * of those pages about 0.4 KB (D20, D21), and a constant does not.
+ */
+const microWidth = (text: string, padding: number) => text.length * MICRO_CHAR + padding;
 
 /** How many cards have no clear owner. */
 export function unclearOwners(s: RequirementsState): number {
