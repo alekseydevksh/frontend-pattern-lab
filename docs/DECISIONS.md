@@ -1035,3 +1035,84 @@ not a wrong index in the data; the unit rules above catch those.
 | `/lessons/state-ownership/`     | 146.8 KB, 8 files | 146.8 KB, 8 files   | 9.1 KB                |
 
 **Tests:** unit 527 before, 552 after (36 and 40 files); end-to-end 157 before, 173 after.
+
+## D21. Lesson 7, Requirements First and Component Boundaries, and the owner's answers to the tooling questions (2026-11-27)
+
+No dependency was added. `src/engine/` is unchanged (`git diff main -- src/engine` is empty). The lesson is one
+data file, one scene, one page file and the catalog entry, as D16 describes. Owner answers to the tooling pull
+request's questions, recorded:
+
+1. Lessons 3 to 6 stay as they are. New scenes (lessons 7 to 12) may use only the shared style strings, the tone
+   maps and the width maths of `sceneKit`, not its components, because a lesson page loads one scene and a shared
+   component adds bytes to every page that uses it.
+2. The "takeaways are ticked in order" rule and its test stay.
+3. The lesson pull request template is used explicitly for lesson pull requests, not as the default.
+
+This pull request also adds `docs/EDITORIAL.md` (five editorial rules and the fact log), a pointer to it in
+`CLAUDE.md`, the M6 editorial pass and the "Later (v2)" list in `docs/PROGRESS.md`.
+
+**Choices the spec did not settle**
+
+- **The outline's scene, with the owner's idea inside it.** The owner suggested a boundary drawn by looks that has to
+  change when a requirement changes, against one drawn by responsibility that does not. The outline asks for
+  requirement cards on the left and a layer stack on the right, so the scene follows the outline, and the idea is
+  steps 4 and 5: the same new requirement ("Offers can be paused") arrives in both. The cards get a seventh entry, a
+  packet travels to the structure, and the parts that must be edited say EDIT: 4 of 4 when split by looks, 1 of 7
+  when split by responsibility. I say "edited" and not "redrawn": in the responsibility split no boundary moves, and
+  in the looks split every boundary stays but none of them holds the change in.
+- **Six steps, the outline's six.** Requirements first; two kinds; a page against an app (a three-requirement page
+  needs two layers, the six-requirement offers screen strains the same two); split by looks; split by
+  responsibility; "which layer owns it?" (the verdict table). Six takeaways, one per step.
+- **"Unclear owners" is a count of cards with no clear owner**, computed from the state: a card's `owner` is the name
+  of one part, or `null` for "no clear owner". The drawing says it in words (`no clear owner`), so the metric is never
+  the only carrier. It is red while above 0, teal at 0 once a card exists, and plain before any card.
+- **The metric "Requirements" is labelled "Needs".** At 375 px the 12-letter word broke inside its tile
+  ("REQUIREME / NTS"), and the shared tile must not change (D19). The cards and the lesson text still say
+  requirements.
+- **The right side shows text blocks before there is a structure** (steps 1 and 2: "no structure yet", then what
+  functional and non-functional requirements pull on) and bands once there is one. Blocks and bands are state, so a
+  step changes them with a frame.
+- **Words as well as colours.** A card carries FUNCTIONAL or NON-FUNCTIONAL, an owner line (`owner: OfferList` or
+  `no clear owner`) and NEW while it is the one that just arrived; a part to edit carries EDIT beside its name as
+  well as a red outline; a closing note says how many parts change.
+- **The verdict table says when not to use the layers** (editorial rule 1): "A landing page with no data: Keep it
+  flat" and "A throwaway internal tool: Page and primitives" are `warn` rows, and the last step's text says layers
+  cost files, names and indirection.
+- **No library is named.** Parts are made up for the offers screen (`OffersPage`, `OfferList`, `CreateOfferForm`,
+  `OfferCard`, `StatusBadge`, `Button`, `TextField`, `Header`, `Sidebar`, `CardGrid`, `HoursPage`). The code sample is
+  four lines of imports. The lesson makes no claim about React or any other API, so it adds no fact-log row.
+- **The scene imports from `sceneKit`**: `cap`, `panel`, `small`, `note`, `ease`, the two tone maps, `microWidth` and
+  `MICRO_CHAR`. No component. The lesson page grew to 146.4 KB; its own file is 8.8 KB.
+- **Numbers and names.** The screen, its requirements and its parts are made up; the drawing says "illustrative
+  screen, requirements and parts" and step 1's text says so.
+- **A fit test found a real overflow.** The looks band with three edited chips was 296 px wide in a 288 px band; the
+  chip padding was tightened and `RequirementsScene.test.tsx` now checks every state of the lesson (card text,
+  aside lines, chips per band, owners being parts of the structure drawn with them).
+- **Layout.** The viewBox is 640 by 460. Lane: `change`, from the seventh card to the structure.
+
+**Tests**
+
+- `src/components/scenes/RequirementsScene.test.tsx`: the owner and edit counts, the metrics and their tones, the words
+  of cards and parts, the empty notes, the aside shown only without bands, the lane, the same picture for the same
+  state, and the fit of every state of the lesson.
+- `e2e/lesson-07-requirements-first.spec.ts`: the whole lesson with the keyboard against a frozen clock (cards,
+  metrics, EDIT marks and notes after the frames, the packets, the verdict table, back to step 1). The shared checks
+  pick the lesson up from the catalog.
+
+**JavaScript per route, from the export** (gzipped, level 9):
+
+| Route                           | Before (main)     | After (this branch) | Of which its own file |
+| ------------------------------- | ----------------- | ------------------- | --------------------- |
+| `/` (catalog)                   | 139.2 KB, 8 files | 139.2 KB, 8 files   | none, and no scene    |
+| `/lessons/optimistic-ui/`       | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.7 KB                |
+| `/lessons/push-pull-sync/`      | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.6 KB                |
+| `/lessons/virtualization/`      | 147.1 KB, 8 files | 147.1 KB, 8 files   | 9.4 KB                |
+| `/lessons/normalized-data/`     | 146.8 KB, 8 files | 146.8 KB, 8 files   | 9.2 KB                |
+| `/lessons/rendering-isolation/` | 147.0 KB, 8 files | 147.0 KB, 8 files   | 9.3 KB                |
+| `/lessons/state-ownership/`     | 146.8 KB, 8 files | 146.8 KB, 8 files   | 9.1 KB                |
+| `/lessons/requirements-first/`  | none              | 146.4 KB, 8 files   | 8.8 KB                |
+
+No other page changed in size. The new page has 3.6 KB to spare.
+
+**Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices 100,
+LCP 0.75 s, CLS 0.000, total blocking time 45 ms.
