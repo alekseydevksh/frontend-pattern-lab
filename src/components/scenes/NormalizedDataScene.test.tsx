@@ -8,8 +8,8 @@ import {
   writesNeeded,
   type NormalizedState,
 } from './NormalizedDataScene';
+import { drawScene, expectSamePicture, fadedText as faded } from './sceneTest';
 
-const Scene = normalizedDataScene.Component;
 const base = normalizedData.baseState;
 const OLD = 'Mira Lund';
 const NEW = 'Mira Vale';
@@ -26,29 +26,7 @@ const entities: NormalizedState = {
   view: [OLD, OLD, OLD],
 };
 
-function draw(state: NormalizedState) {
-  return (
-    <svg>
-      <Scene state={state} />
-    </svg>
-  );
-}
-
-/** The opacity class of the group a piece of text sits in: hidden groups carry `opacity-0`. */
-const hidden = (text: string) =>
-  screen.getByText(text).closest('g')!.classList.contains('opacity-0');
-
-/** The markup with each element's attributes in a fixed order, so equal pictures compare equal. */
-function canonical(node: Element): string {
-  const attrs = [...node.attributes]
-    .map((a) => `${a.name}="${a.value}"`)
-    .sort()
-    .join(' ');
-  const inner = [...node.childNodes]
-    .map((child) => (child instanceof Element ? canonical(child) : child.textContent))
-    .join('');
-  return `<${node.tagName} ${attrs}>${inner}</${node.tagName}>`;
-}
+const draw = (state: NormalizedState) => drawScene(normalizedDataScene, state);
 
 describe('the normalized data scene', () => {
   it('counts the places that hold the user, writes still needed and views in sync', () => {
@@ -131,12 +109,12 @@ describe('the normalized data scene', () => {
 
   it('draws one record and three references in the entity mode, and says when there is none', () => {
     const { rerender } = render(draw(copies));
-    expect(hidden('USERS')).toBe(true);
-    expect(hidden('NO SHARED RECORD')).toBe(false);
+    expect(faded('USERS')).toBe(true);
+    expect(faded('NO SHARED RECORD')).toBe(false);
     expect(screen.getByText('no update yet')).toBeTruthy();
     rerender(draw(entities));
-    expect(hidden('USERS')).toBe(false);
-    expect(hidden('NO SHARED RECORD')).toBe(true);
+    expect(faded('USERS')).toBe(false);
+    expect(faded('NO SHARED RECORD')).toBe(true);
     expect(screen.getAllByText('→ u1')).toHaveLength(3);
     expect(screen.getByText('3 references')).toBeTruthy();
     expect(screen.queryByText('STALE')).toBeNull();
@@ -150,20 +128,17 @@ describe('the normalized data scene', () => {
     expect(panelHidden()).toBe(true);
     rerender(draw({ ...entities, plan: 2 }));
     expect(panelHidden()).toBe(false);
-    expect(hidden('Same id, same record')).toBe(false);
-    expect(hidden('Merge every response')).toBe(false);
-    expect(hidden('Refetch what drifts')).toBe(true);
+    expect(faded('Same id, same record')).toBe(false);
+    expect(faded('Merge every response')).toBe(false);
+    expect(faded('Refetch what drifts')).toBe(true);
   });
 
   it('draws the same picture for the same state, wherever it has been before', () => {
     const target: NormalizedState = { ...entities, plan: 3, latest: NEW, sent: true };
-    const fresh = render(draw(target));
-    const direct = canonical(fresh.container);
-    fresh.unmount();
-    const walked = render(draw(base));
-    walked.rerender(draw(copies));
-    walked.rerender(draw({ ...copies, latest: NEW, sent: true }));
-    walked.rerender(draw(target));
-    expect(canonical(walked.container)).toBe(direct);
+    expectSamePicture(normalizedDataScene, target, [
+      base,
+      copies,
+      { ...copies, latest: NEW, sent: true },
+    ]);
   });
 });

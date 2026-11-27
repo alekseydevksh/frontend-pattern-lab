@@ -2,36 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { virtualization } from '@content/lessons/virtualization';
 import { mountedRows, virtualizationScene, type VirtualizationState } from './VirtualizationScene';
+import { drawScene, expectSamePicture, fadedText as faded } from './sceneTest';
 
-const Scene = virtualizationScene.Component;
 const base = virtualization.baseState;
 
-function draw(state: VirtualizationState) {
-  return (
-    <svg>
-      <Scene state={state} />
-    </svg>
-  );
-}
-
-/** The opacity class of the group a piece of text sits in: hidden groups carry `opacity-0`. */
-const hidden = (text: string) =>
-  screen.getByText(text).closest('g')!.classList.contains('opacity-0');
-
-/**
- * The markup with each element's attributes in a fixed order. React appends an attribute that is
- * added on an update (a dash pattern, say), so the same picture can list attributes differently.
- */
-function canonical(node: Element): string {
-  const attrs = [...node.attributes]
-    .map((a) => `${a.name}="${a.value}"`)
-    .sort()
-    .join(' ');
-  const inner = [...node.childNodes]
-    .map((child) => (child instanceof Element ? canonical(child) : child.textContent))
-    .join('');
-  return `<${node.tagName} ${attrs}>${inner}</${node.tagName}>`;
-}
+const draw = (state: VirtualizationState) => drawScene(virtualizationScene, state);
 
 describe('the virtualization scene', () => {
   it('mounts every fetched row, or only the eight slots of a window', () => {
@@ -83,23 +58,20 @@ describe('the virtualization scene', () => {
 
   it('lights the containment chip and the cost chips from the state', () => {
     const { rerender } = render(draw(base));
-    expect(hidden('content-visibility: auto')).toBe(true);
-    expect(hidden('Row heights')).toBe(true);
+    expect(faded('content-visibility: auto')).toBe(true);
+    expect(faded('Row heights')).toBe(true);
     rerender(draw({ ...base, contain: true, costs: 2 }));
-    expect(hidden('content-visibility: auto')).toBe(false);
-    expect(hidden('Row heights')).toBe(false);
-    expect(hidden('Focus')).toBe(false);
-    expect(hidden('Find in page')).toBe(true);
+    expect(faded('content-visibility: auto')).toBe(false);
+    expect(faded('Row heights')).toBe(false);
+    expect(faded('Focus')).toBe(false);
+    expect(faded('Find in page')).toBe(true);
   });
 
   it('draws the same picture for the same state, wherever it has been before', () => {
     const target = { ...base, mounted: 'window' as const, spacers: true, costs: 3 };
-    const fresh = render(draw(target));
-    const direct = canonical(fresh.container);
-    fresh.unmount();
-    const walked = render(draw({ ...base, loaded: 0 }));
-    walked.rerender(draw({ ...base, contain: true }));
-    walked.rerender(draw(target));
-    expect(canonical(walked.container)).toBe(direct);
+    expectSamePicture(virtualizationScene, target, [
+      { ...base, loaded: 0 },
+      { ...base, contain: true },
+    ]);
   });
 });

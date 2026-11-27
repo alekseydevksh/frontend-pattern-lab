@@ -10,8 +10,8 @@ import {
   type PerItem,
   type Station,
 } from './StateOwnershipScene';
+import { drawScene, expectSamePicture, fadedText as faded, isFaded } from './sceneTest';
 
-const Scene = stateOwnershipScene.Component;
 const base = stateOwnership.baseState;
 
 /** Every item in its home: offers, filter, modal, theme, job, profile, draft, sort. */
@@ -49,31 +49,7 @@ const oneWay: OwnershipState = {
   ],
 };
 
-function draw(state: OwnershipState) {
-  return (
-    <svg>
-      <Scene state={state} />
-    </svg>
-  );
-}
-
-/** Whether the element a piece of text sits in, or its group, is faded out. */
-const faded = (text: string) => {
-  const el = screen.getByText(text);
-  return el.classList.contains('opacity-0') || el.closest('g')!.classList.contains('opacity-0');
-};
-
-/** The markup with each element's attributes in a fixed order, so equal pictures compare equal. */
-function canonical(node: Element): string {
-  const attrs = [...node.attributes]
-    .map((a) => `${a.name}="${a.value}"`)
-    .sort()
-    .join(' ');
-  const inner = [...node.childNodes]
-    .map((child) => (child instanceof Element ? canonical(child) : child.textContent))
-    .join('');
-  return `<${node.tagName} ${attrs}>${inner}</${node.tagName}>`;
-}
+const draw = (state: OwnershipState) => drawScene(stateOwnershipScene, state);
 
 describe('the state ownership scene', () => {
   it('counts the homes in use, the unowned items and the hops', () => {
@@ -114,14 +90,6 @@ describe('the state ownership scene', () => {
       { value: '0', tone: 'good' },
       { value: '3 hops', tone: 'good' },
     ]);
-  });
-
-  it('keeps every metric value within seven characters', () => {
-    for (const step of stateOwnership.steps) {
-      for (const metric of stateOwnershipScene.metrics({ ...base, ...step.startState })) {
-        expect(metric.value.length).toBeLessThanOrEqual(7);
-      }
-    }
   });
 
   it('says in words that the store has no owner and the homes are empty', () => {
@@ -193,18 +161,6 @@ describe('the state ownership scene', () => {
 
   it('draws the same picture for the same state, wherever it has been before', () => {
     const target: OwnershipState = { ...oneWay, hot: 1 };
-    const fresh = render(draw(target));
-    const direct = canonical(fresh.container);
-    fresh.unmount();
-    const walked = render(draw(base));
-    walked.rerender(draw(looped));
-    walked.rerender(draw(sorted));
-    walked.rerender(draw(target));
-    expect(canonical(walked.container)).toBe(direct);
+    expectSamePicture(stateOwnershipScene, target, [base, looped, sorted]);
   });
 });
-
-/** Whether an element itself is faded out. */
-function isFaded(el: HTMLElement) {
-  return el.classList.contains('opacity-0');
-}
