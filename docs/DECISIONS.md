@@ -1081,8 +1081,14 @@ This pull request also adds `docs/EDITORIAL.md` (five editorial rules and the fa
 - **No library is named.** Parts are made up for the offers screen (`OffersPage`, `OfferList`, `CreateOfferForm`,
   `OfferCard`, `StatusBadge`, `Button`, `TextField`, `Header`, `Sidebar`, `CardGrid`, `HoursPage`). The code sample is
   four lines of imports. The lesson makes no claim about React or any other API, so it adds no fact-log row.
-- **The scene imports from `sceneKit`**: `cap`, `panel`, `small`, `note`, `ease`, the two tone maps, `microWidth` and
-  `MICRO_CHAR`. No component. The lesson page grew to 146.4 KB; its own file is 8.8 KB.
+- **The scene keeps its own copy of the few styles it uses, and imports nothing from `sceneKit`.** The owner allowed
+  the style strings and tone maps, not the components. Measured: with those imports the page was 146.4 KB and
+  8 files while this was the only scene using the module; once lesson 8's scene used it too, `sceneKit` (which holds
+  components as well) went into a chunk of its own shared by the two routes, and the two pages grew by 0.4 KB and
+  gained a ninth file (lesson 7 146.8 KB, lesson 8 147.2 KB). With local copies: lesson 7 146.4 KB, lesson 8
+  146.9 KB, 8 files each. The copies are about twenty lines. The fix that makes sharing free is a module of strings
+  and maps only, without components (D20's third layout, +25 to +55 bytes); that is a change to the tooling, so it is
+  an open question in the pull request, not something done here.
 - **Numbers and names.** The screen, its requirements and its parts are made up; the drawing says "illustrative
   screen, requirements and parts" and step 1's text says so.
 - **A fit test found a real overflow.** The looks band with three edited chips was 296 px wide in a 288 px band; the
