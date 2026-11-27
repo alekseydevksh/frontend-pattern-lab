@@ -127,6 +127,12 @@ Not a lesson: the preparation the owner asked for before lesson 4 (D16).
 - [x] Lesson page JavaScript 147.0 KB gzipped (limit 150 KB); no other page changed in size
 - [ ] The owner checks the look (screenshots: see the pull request)
 
+### M6 acceptance criteria
+
+Besides the spec's M6 entry (README, docs, social previews, screen reader pass, final Lighthouse):
+
+- [ ] Verdict table readable on a phone without sideways scrolling.
+
 ## Lessons
 
 - [x] 1. Optimistic UI
