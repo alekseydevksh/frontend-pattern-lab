@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { lessons, sceneRegistry as scenes } from '@/components/scenes/registry';
+import { lessonPages, lessons, sceneRegistry as scenes } from '@/components/scenes/registry';
+import { patchState, startStateOf } from '@/engine/state';
 import { validateLesson, validateLessons } from '@/engine/validate';
+
+/** The longest metric value that fits its tile on a 375 px phone (docs/ADDING_A_LESSON.md). */
+const MAX_METRIC_CHARS = 7;
 
 /**
  * The content validation test. It runs over every lesson page's lesson, with the scene that page
@@ -33,6 +37,40 @@ describe('content/lessons', () => {
   it('has a scene in the registry for every lesson', () => {
     for (const lesson of lessons) {
       expect(Object.keys(scenes), lesson.slug).toContain(lesson.sceneId);
+    }
+  });
+
+  it('has a takeaway ticked by some step, and none that never is', () => {
+    for (const lesson of lessons) {
+      const ticked = new Set(lesson.steps.map((step) => step.takeawayIndex));
+      for (const [index, takeaway] of lesson.takeaways.entries()) {
+        expect(ticked.has(index), `${lesson.slug}: no step ticks "${takeaway}"`).toBe(true);
+      }
+    }
+  });
+
+  it('ticks the takeaways in order, so the checklist fills from the top', () => {
+    for (const lesson of lessons) {
+      const indexes = lesson.steps.map((step) => step.takeawayIndex);
+      expect(indexes, lesson.slug).toEqual([...indexes].sort((a, b) => a - b));
+    }
+  });
+
+  it(`keeps every metric value within ${MAX_METRIC_CHARS} characters at every step and frame`, () => {
+    // The shared metric tile does not stretch: a longer value is cut off on a phone.
+    for (const { lesson, scene } of lessonPages) {
+      for (const step of lesson.steps) {
+        let state = startStateOf(lesson, step);
+        const states = [state, ...step.frames.map((f) => (state = patchState(state, f.set)))];
+        for (const [i, s] of states.entries()) {
+          for (const metric of scene.metrics(s)) {
+            expect(
+              metric.value.length,
+              `${lesson.slug}, step "${step.id}", ${i === 0 ? 'start' : `frame ${i - 1}`}: "${metric.value}"`,
+            ).toBeLessThanOrEqual(MAX_METRIC_CHARS);
+          }
+        }
+      }
     }
   });
 });
