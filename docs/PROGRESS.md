@@ -151,6 +151,20 @@ Not a lesson: the preparation the owner asked for before lesson 4 (D16).
 - [x] The lesson says when not to use the layers (verdict table rows and last step; EDITORIAL.md rule 1)
 - [ ] The owner checks the look (screenshots: see the pull request)
 
+### Lesson 8 acceptance criteria
+
+- [x] Content validation passes (`pnpm test`: `content/lessons/lessons.test.ts` and the catalog test)
+- [x] The end-to-end test plays it from the first step to the last with the keyboard, and checks the metrics,
+      the model fields, the view's three drawings and the verdict table
+      (`e2e/lesson-08-container-view-viewmodel.spec.ts`)
+- [x] axe is clean in both themes, on the final state of every step and with a packet in flight
+- [x] Checked at desktop (1280 px) and phone width (375 px): no layout shift, the step card keeps its height,
+      the metric labels and values fit, the page never scrolls sideways; screenshots of every step in both themes
+- [x] Lesson page JavaScript 146.9 KB gzipped (limit 150 KB); no other page changed in size
+- [x] The lesson says when not to use the third layer (verdict table rows and last step; EDITORIAL.md rule 1), and
+      its Hook claims are in the fact log
+- [ ] The owner checks the look (screenshots: see the pull request)
+
 ### M5 tooling acceptance criteria
 
 Not a lesson: the preparation the owner asked for before lessons 7 to 12 (D20).
@@ -184,7 +198,7 @@ Besides the spec's M6 entry (README, docs, social previews, screen reader pass, 
 - [x] 5. Rendering Isolation
 - [x] 6. State Ownership
 - [x] 7. Requirements First and Component Boundaries
-- [ ] 8. Container, View, ViewModel
+- [x] 8. Container, View, ViewModel
 - [ ] 9. Backend for Frontend
 - [ ] 10. Progressive Rendering
 - [ ] 11. Permission-Aware UI

@@ -1122,3 +1122,72 @@ No other page changed in size. The new page has 3.6 KB to spare.
 
 **Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices 100,
 LCP 0.75 s, CLS 0.000, total blocking time 45 ms.
+
+## D22. Lesson 8, Container, View, ViewModel (2026-11-27)
+
+No dependency was added. `src/engine/` is unchanged (`git diff main -- src/engine` is empty). The lesson is one data
+file, one scene, one page file and the catalog entry, as D16 describes. This pull request is stacked on lesson 7's
+(it was branched from it, and must be merged after it). It also adds the three fact-log rows the lesson relies on.
+
+**Choices the spec did not settle**
+
+- **The outline's scene, with the owner's idea inside it.** The owner suggested the three layers (fetching, mapping the
+  backend model to a screen model, drawing) against a custom Hook, and when the extra layer pays off or is ceremony.
+  The outline asks for three columns with a payload entering on the left and a UI model leaving on the right, so the
+  scene follows it. The Hook comparison is in the last step: its text and the two `warn` rows of the verdict table
+  ("A small read-only widget: A hook is enough", "A throwaway prototype: One component").
+- **Six steps, the outline's six.** One component does it all; three layers; the container fetches and mutates; the
+  view model translates; the view only draws (loading, ready, failure); why it pays, and when it does not. One
+  takeaway per step.
+- **Step 1 is one box, not three columns.** One wide box lists eight rows of code, each tagged FETCH, DECIDE or DRAW in
+  a word as well as a colour, in the order they would sit in the code, with the seven raw payload fields above them.
+  Step 2 splits it into the three columns.
+- **Metrics follow the outline and are computed from the state.** "Backend fields" is the payload fields held (0 to 7),
+  "UI fields" the fields the view model has built (0 to 5), "Logic in view" the decisions still made in the view:
+  the DECIDE rows while one component does everything (4), then the decisions listed in the view column (4 to 0).
+  Red above 0, teal at 0. Seven backend fields become five screen fields: `owner_id` and `region` are left out, and
+  the view model column says so.
+- **The decisions leave the view as the model is built.** In step 4 each field the view model builds removes one
+  decision from the view (the title needs none), so the third metric falls from 4 to 0 in step with the second
+  rising to 5. A test checks that no state of the lesson holds more decisions in the view than that allows.
+- **Failure is part of the lesson's last drawing step.** Step 5 shows the view as blank, loading (grey bars and the
+  word LOADING…), ready (the offer) and failed (COULD NOT LOAD and a Try again button), driven by the container's
+  request line (`request: loading`, `ready`, `failed`). The step ends on the failure, so that is also what reduced
+  motion shows.
+- **Packets.** Three lanes along the top: `backend` (a request goes out, the payload comes back), `pass` (container to
+  view model) and `show` (view model to view).
+- **Hook claims are verified.** The last step says that a custom Hook is a function whose name starts with `use` and can
+  call other Hooks, and that each component that calls it gets its own state. All three claims are in the fact log
+  in `docs/EDITORIAL.md` with the react.dev source and 2026-11-27 as the date. No library is named; `fetch` is the
+  browser's own, and `Pill`, `Skeleton`, `Retry` and `OfferCard` are made up.
+- **When not to use it** (editorial rule 1) is in the verdict table and the last step's second paragraph: a read-only
+  widget needs one Hook, a throwaway prototype one component, and the third layer is for several views sharing a
+  model or rules that need tests of their own.
+- **The scene keeps its own copy of the few styles it uses**, like lesson 7's (D21): with `sceneKit` imported by two
+  scenes, both pages grew by 0.4 KB and gained a file. The measured numbers are in D21.
+- **Numbers and names.** The offer, its payload and the requests are made up; the drawing says "illustrative offer ·
+  simulated requests" and step 1's text says so. Code samples are four to five lines each.
+- **Layout.** The viewBox is 640 by 440, with the lane row along the top.
+
+**Tests**
+
+- `src/components/scenes/ContainerViewScene.test.tsx`: the decision count, the metrics, the job words, the three
+  columns, the request words, the model fields with their sources, the logic heading, the four view drawings, the
+  lanes, the same picture for the same state, and the fit and consistency of every state of the lesson.
+- `e2e/lesson-08-container-view-viewmodel.spec.ts`: the whole lesson with the keyboard against a frozen clock (the
+  payload, the split, the request line, the model fields and the metrics after each frame, the packets, the view's
+  loading, ready and failed drawings, the verdict table, back to step 1). The shared checks pick the lesson up from
+  the catalog.
+
+**JavaScript per route, from the export** (gzipped, level 9; lesson 7 is the pull request below this one):
+
+| Route                                | Before (lesson 7's branch) | After (this branch) | Of which its own file |
+| ------------------------------------ | -------------------------- | ------------------- | --------------------- |
+| `/` (catalog)                        | 139.2 KB, 8 files          | 139.2 KB, 8 files   | none, and no scene    |
+| `/lessons/requirements-first/`       | 146.4 KB, 8 files          | 146.4 KB, 8 files   | 8.8 KB                |
+| `/lessons/container-view-viewmodel/` | none                       | 146.9 KB, 8 files   | 9.2 KB                |
+
+Lessons 1 to 6 are unchanged in size. The new page has 3.1 KB to spare.
+
+**Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices 100,
+LCP 0.75 s, CLS 0.000, total blocking time 31 ms.
