@@ -6,6 +6,7 @@ Spec: docs/SPEC.md. Visual reference: reference/prototype.html (not shipped).
 ## Commands
 
 - pnpm dev | build | lint | typecheck | test | test:e2e | format | storybook | build-storybook
+- pnpm budget (size table) | check:lesson <slug> (every check for a lesson, as a markdown report)
 - Before every commit: pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ## Architecture rules
@@ -14,6 +15,8 @@ Spec: docs/SPEC.md. Visual reference: reference/prototype.html (not shipped).
   src/components/scenes. The engine is in src/engine. Keep these apart.
 - Adding a lesson must not change src/engine. If it seems to, stop and ask.
 - Scenes are pure: state in, SVG out. No timers, no globals, no hard-coded colours.
+- A scene imports no other scene and no lesson data. Only scenes import `src/components/scenes/sceneKit.tsx`;
+  only tests import `sceneTest.tsx` (lint and `boundaries.test.ts` enforce it).
 - Server components by default. Client components only for the player and scenes.
 - Colours and spacing come from tokens in src/styles/tokens.css.
 
@@ -56,7 +59,14 @@ Spec: docs/SPEC.md. Visual reference: reference/prototype.html (not shipped).
 - On "go ahead with M2" (or any later milestone): first check that the previous pull
   request is merged, pull main, and only then create the next branch. If it is not
   merged, tell the owner and wait.
-- On "go ahead with lesson N": follow the "New lesson procedure" in docs/ADDING_A_LESSON.md.
+- On "go ahead with lesson N": follow the "New lesson procedure" in docs/ADDING_A_LESSON.md. Run
+  `pnpm check:lesson <slug>` for every check and the block to paste, and open the pull request from
+  `.github/PULL_REQUEST_TEMPLATE/lesson.md` (`gh pr create --template lesson.md`).
+- On "go ahead with lessons N and M": two lessons at a time. Do lesson N in full and open its pull request
+  against main. Create lesson M's branch from lesson N's branch (not from main), do M in full, and open its
+  pull request against lesson N's branch. With both pull requests open, report both and stop. Never merge.
+  After the owner merges N, retarget M's pull request to main (`gh pr edit <M> --base main`). See "Two
+  lessons at a time" in docs/ADDING_A_LESSON.md.
 
 ## Ask the owner before
 
