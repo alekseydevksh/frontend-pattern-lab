@@ -132,16 +132,16 @@ own: nothing else needs to be said to start the next lesson.
 
 **2. The files**
 
-| File                                         | What goes in it                                                                                                                                                                                                                                                                                                                                                                   |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `content/lessons/<slug>.ts`                  | The `Lesson`: five to seven steps. Each step has at most two short paragraphs, a key idea, frames, packets where they help, a `sceneAlt` sentence and a `takeawayIndex`; a `summary` (verdict table) where the outline asks for one. Every word the scene draws is in the state.                                                                                                  |
-| `src/components/scenes/<Name>Scene.tsx`      | The `SceneDefinition`, starting with `'use client';`: pure, no state, no timers, no hard-coded colours or text. Positions of markers and similar details live in the lesson data.                                                                                                                                                                                                 |
-| `src/components/scenes/<Name>Scene.test.tsx` | Unit tests of the scene: what it draws for a state, its metrics, and the same picture for the same state.                                                                                                                                                                                                                                                                         |
-| `src/app/(site)/lessons/<slug>/page.tsx`     | The page file: the lesson and its scene, passed to `lessonMetadata` and `lessonPage` (copy the one of the lesson before).                                                                                                                                                                                                                                                         |
-| `content/lessons/catalog.ts`                 | The entry set to `ready`, with `minutes` and `stepCount`.                                                                                                                                                                                                                                                                                                                         |
-| `e2e/lesson-NN-<slug>.spec.ts`               | Plays the lesson from the first step to the last with the keyboard against a frozen clock, and checks the metrics after the frames, the verdict table, the takeaways, pause and replay, reduced motion, no sideways scroll at 375 px, and axe in both themes on every step and with a packet in flight. Use `e2e/lesson-helpers.ts`; copy `e2e/lesson-03-virtualization.spec.ts`. |
-| `docs/DECISIONS.md`                          | A record for the choices the spec did not settle.                                                                                                                                                                                                                                                                                                                                 |
-| `docs/PROGRESS.md`                           | The lesson ticked, under the conditions in step 5.                                                                                                                                                                                                                                                                                                                                |
+| File                                         | What goes in it                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `content/lessons/<slug>.ts`                  | The `Lesson`: five to seven steps. Each step has at most two short paragraphs, a key idea, frames, packets where they help, a `sceneAlt` sentence and a `takeawayIndex`; a `summary` (verdict table) where the outline asks for one. Every word the scene draws is in the state.                                                                                                                                                    |
+| `src/components/scenes/<Name>Scene.tsx`      | The `SceneDefinition`, starting with `'use client';`: pure, no state, no timers, no hard-coded colours or text. Positions of markers and similar details live in the lesson data.                                                                                                                                                                                                                                                   |
+| `src/components/scenes/<Name>Scene.test.tsx` | Unit tests of the scene: what it draws for a state, its metrics, and the same picture for the same state. Use `sceneTest.tsx` (`drawScene`, `fadedText`, `expectSamePicture`); copy the test of the lesson before. A metric value that is too long is caught for every lesson by `content/lessons/lessons.test.ts`.                                                                                                                 |
+| `src/app/(site)/lessons/<slug>/page.tsx`     | The page file: the lesson and its scene, passed to `lessonMetadata` and `lessonPage` (copy the one of the lesson before).                                                                                                                                                                                                                                                                                                           |
+| `content/lessons/catalog.ts`                 | The entry set to `ready`, with `minutes` and `stepCount`.                                                                                                                                                                                                                                                                                                                                                                           |
+| `e2e/lesson-NN-<slug>.spec.ts`               | Only the step-by-step play-through: the lesson from the first step to the last with the keyboard against a frozen clock, checking the metrics after the frames and the verdict table. Copy `e2e/lesson-06-state-ownership.spec.ts`. Read the times from the lesson with `loadLesson(slug)` and `playhead(page, lesson)` (`run.toFrame(k)`, `run.next()`), never type a time. The rest is shared and needs no code (next paragraph). |
+| `docs/DECISIONS.md`                          | A record for the choices the spec did not settle.                                                                                                                                                                                                                                                                                                                                                                                   |
+| `docs/PROGRESS.md`                           | The lesson ticked, under the conditions in step 5.                                                                                                                                                                                                                                                                                                                                                                                  |
 
 Content rules: original words only; take the idea from the spec outline, never copy or closely paraphrase
 the source article or the sample site. A number drawn in a diagram is labelled illustrative or
@@ -158,11 +158,40 @@ These run for every ready lesson without being edited: content validation and th
 the budget. The previous lesson's last step now offers this lesson: its spec reads the label from the
 catalog (`lastStepButton`), so it needs no edit either.
 
+`e2e/lesson-shared.spec.ts` runs for every ready lesson in the catalog, with its expectations read from the
+lesson data (`content/lessons/<slug>.ts`), so a new lesson needs no line in it: the takeaways ticked at each
+step (from each step's `takeawayIndex`), Space and R (paused at the first frame of step 1, resumed, replayed;
+the times come from the frames), reduced motion (every step's picture at once equals the picture a full play
+ends in, and no packet appears), the page never scrolling sideways at 375 px, and axe in both themes on every
+step and with a packet in flight (at the first frame that sends one). To run one lesson's:
+`pnpm exec playwright test e2e/lesson-shared.spec.ts -g "for <slug>\b"`.
+
+**The shared scene module.** `src/components/scenes/sceneKit.tsx` holds the blocks scenes repeat: the text and
+panel styles (`cap`, `panel`, `inner`, `small`, `note`, `ease`), the colour of each tone (`toneStroke`,
+`toneText`), `Bracket` (the bracket beside a diagram), `PanelBox`, the chips `StateChip` and `BoundaryLabel`,
+and the character-width maths (`MICRO_CHAR`, `microWidth`). Only scenes import it, and it imports no scene
+(`src/components/scenes/boundaries.test.ts` and a lint rule). Sharing costs bytes, because a page loads one
+scene and so can never gain from a block another scene also uses (D20): the style strings cost 8 to 55 bytes per
+page, and a component that two lesson pages share about 0.45 KB per page. Use it where it saves more than it
+costs, and read the page's size in `pnpm budget`. Lessons 3 to 6 keep their own copies.
+
 Stop and ask before changing `src/engine`, adding a dependency, or changing an existing lesson.
 
 **3. The checks**
 
-Run all of them, and keep the numbers for the pull request:
+One command runs them all and writes the numbers as a markdown block for the pull request:
+
+```text
+pnpm check:lesson <slug>
+```
+
+It runs lint, types, formatting and the unit tests, the build and the budget, the end-to-end tests that cover
+the lesson (its own spec, the shared checks for it, and the specs that read every ready lesson), the Storybook
+build, and Lighthouse on the lesson page. It keeps the Mac awake with `caffeinate` while it runs, carries on
+past a failing check (the ones that need the build are skipped if it fails), and prints the report; the report
+and each step's output are in `.lesson-checks/<slug>/`. `--skip lighthouse,storybook` leaves steps out while
+iterating. Before opening the pull request, and after the last change, a run with nothing skipped has to be
+green. Run by hand, the checks are:
 
 ```text
 pnpm lint && pnpm typecheck && pnpm format:check && pnpm test
@@ -172,7 +201,8 @@ pnpm build-storybook
 LIGHTHOUSE_LESSON=<slug> pnpm lighthouse
 ```
 
-The budget: a lesson page loads under 150 KB of gzipped JavaScript, the catalog under 145 KB. Do not move
+The budget: a lesson page loads under 150 KB of gzipped JavaScript, the catalog under 145 KB (`pnpm budget`
+prints the table in markdown). Do not move
 the limits and do not trim app code to fit: if the new page is over, stop and report the numbers. The
 budget also fails a lesson page that carries another lesson's scene, or names a file that holds one, and
 prints which scene each page carries.
@@ -193,10 +223,35 @@ look.
 **6. The pull request, and stop**
 
 - Small Conventional Commits, one per logical step. Push the branch and open one pull request titled
-  `Add lesson: <title>` with the GitHub CLI, only when every check above passes locally.
-- The description holds: a summary; the acceptance criteria with their status; the result of every check,
-  including the lesson page's JavaScript size and the Lighthouse numbers; the screenshot folder; the
-  decisions the spec did not settle; open questions.
+  `Add lesson: <title>` with the GitHub CLI, only when every check above passes locally. The description
+  starts from the template: `gh pr create --template lesson.md` (`.github/PULL_REQUEST_TEMPLATE/lesson.md`).
+- The description holds: a summary; the acceptance criteria with their status; the result of every check (paste
+  the block `pnpm check:lesson <slug>` printed: it has the lesson page's JavaScript size and the Lighthouse
+  numbers); the screenshot folder; the decisions the spec did not settle; open questions.
 - Wait for CI on the branch and report the result. Never merge. Then stop and wait for "go ahead with
-  lesson N+1". The spec's owner checkpoints are after lesson 3 (the style of the new scenes) and after
-  lesson 6 (before the less visual lessons 7 to 12).
+  lesson N+1" (or "go ahead with lessons N and M"). The spec's owner checkpoints are after lesson 3 (the style
+  of the new scenes) and after lesson 6 (before the less visual lessons 7 to 12).
+
+## Two lessons at a time
+
+From lesson 7 on, the owner may say "go ahead with lessons N and M" (M = N + 1). The procedure above runs
+once for each lesson, with these differences:
+
+1. Check that the lesson before N is merged, as for one lesson. Create the first branch from an up-to-date
+   `main`: `m5-lesson-NN-<slug>`.
+2. Do lesson N completely: all of the procedure, its commits, `pnpm check:lesson <slug>` green. Push the branch.
+   Open its pull request against `main`.
+3. Create the second branch, `m5-lesson-MM-<slug>`, **from the first lesson's branch**, not from `main`, and
+   do lesson M the same way. Its docs and `docs/PROGRESS.md` build on the first lesson's, so the two cannot
+   conflict. Push it and open its pull request **against the first lesson's branch**, so the diff shows lesson M
+   only. Say in its description that it is stacked on the first pull request and must be merged after it.
+4. Both pull requests are open, with CI running on each. Report both links and both CI results, then stop and
+   wait. Never merge either.
+5. After the owner merges the first pull request, GitHub may retarget the second to `main` itself when the first
+   branch is deleted; if it does not, the owner (or Claude, if asked) runs `gh pr edit <M-pr> --base main`. The
+   second branch then needs no rebase when the first was merged with a merge commit or fast-forward; if it was
+   squashed, rebase the second onto `main` first (`git rebase --onto main <first-branch> <second-branch>`).
+   Wait for CI on the second again before it is merged.
+
+If lesson N's pull request needs changes after lesson M was started, change N's branch, then merge it into M's
+(`git merge m5-lesson-NN-<slug>`), so M's pull request stays one lesson's diff on top of N's.
