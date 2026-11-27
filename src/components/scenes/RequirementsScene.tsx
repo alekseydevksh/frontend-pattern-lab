@@ -4,17 +4,6 @@
 import type { Metric, SceneDefinition } from '@/engine/types';
 import { cx } from '@/lib/cx';
 import { format } from '@/lib/format';
-import {
-  MICRO_CHAR,
-  cap,
-  ease,
-  note,
-  panel,
-  small,
-  toneStroke,
-  toneText,
-  type ToneKey,
-} from '@/components/scenes/sceneKit';
 
 /**
  * Scene for lesson 7, Requirements First and Component Boundaries: the requirements of one offers
@@ -29,12 +18,37 @@ import {
  * many parts change.
  *
  * Pure: the same state always draws the same SVG. Positions are constants of the drawing and
- * every word on screen comes from the state, which comes from the lesson data. Only the style
- * strings, the tone maps and the character-width maths of `sceneKit` are used, not its
- * components: a lesson page loads one scene, so a shared component would add bytes to the page (D20).
+ * every word on screen comes from the state, which comes from the lesson data. The styles it
+ * uses are written out below, not imported from `sceneKit` (D21).
  */
 
 /** 0 for a functional requirement, 1 for a non-functional one. */
+// The few styles this scene uses, written out here and not imported from `sceneKit`: a module that
+// two lesson routes import is put in a chunk of its own, which costs each page about 0.4 KB
+// (D20, D21). The same strings live in `sceneKit` for the lessons that gain from sharing them.
+const cap = 'font-mono text-label tracking-caps-wide';
+const panel = 'fill-panel stroke-line stroke-[1.5]';
+const small = 'font-mono text-micro fill-muted-text';
+const note = 'font-body text-micro fill-muted-text';
+const ease = 'transition-[stroke,fill,opacity] duration-(--duration-ui)';
+type ToneKey = 'req' | 'res' | 'ev' | 'bad' | 'muted';
+const toneStroke = {
+  req: 'stroke-req',
+  res: 'stroke-res',
+  ev: 'stroke-ev',
+  bad: 'stroke-bad',
+  muted: 'stroke-muted',
+} as const satisfies Record<ToneKey, string>;
+const toneText = {
+  req: 'fill-req-text',
+  res: 'fill-res-text',
+  ev: 'fill-ev-text',
+  bad: 'fill-bad-text',
+  muted: 'fill-muted-text',
+} as const satisfies Record<ToneKey, string>;
+/** The advance of one character of IBM Plex Mono at the micro size. */
+const MICRO_CHAR = 6.3;
+
 export type RequirementKind = 0 | 1;
 
 export interface Requirement {
@@ -110,11 +124,7 @@ const noteTone = { bad: 'bad', good: 'res', muted: 'muted' } as const satisfies 
 >;
 const kindTone = ['req', 'ev'] as const satisfies readonly ToneKey[];
 
-/**
- * The width of a chip around `text` in the micro mono size. Written out here and not imported from
- * `sceneKit`: a function that two lesson pages share is put in a chunk of its own, which costs each
- * of those pages about 0.4 KB (D20, D21), and a constant does not.
- */
+/** The width of a chip around `text` in the micro mono size: its characters plus `padding`. */
 const microWidth = (text: string, padding: number) => text.length * MICRO_CHAR + padding;
 
 /** How many cards have no clear owner. */
