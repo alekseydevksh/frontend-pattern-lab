@@ -80,6 +80,7 @@ const baseState: OwnershipState = {
     dup: 'TWO OWNERS',
     back: 'copies back',
     kindsOf: '{n} of {total}',
+    hop: '{n} hop',
     hops: '{n} hops',
     none: '—',
   },

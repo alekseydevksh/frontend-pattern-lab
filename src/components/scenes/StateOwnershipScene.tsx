@@ -73,7 +73,8 @@ export interface OwnershipLabels {
   back: string;
   /** The "state kinds" metric. Template: `{n}`, `{total}`. */
   kindsOf: string;
-  /** The "update path length" metric. Template: `{n}`. */
+  /** The "update path length" metric, for one hop and for more. Template: `{n}`. */
+  hop: string;
   hops: string;
   none: string;
 }
@@ -145,9 +146,17 @@ export function unownedCount(s: OwnershipState): number {
   return s.home.filter((h) => h === null).length;
 }
 
-/** How many hops the update has taken, and whether any of them went back. */
-export function pathLength(s: OwnershipState): { hops: number; loops: boolean } {
-  return { hops: s.trail.length, loops: s.trail.some((h) => h.to < h.from) };
+/**
+ * How many hops the update has taken, and whether the path is in trouble: a hop went back, or a
+ * station holds a copy that is out of sync or has a second owner.
+ */
+export function pathLength(s: OwnershipState): { hops: number; troubled: boolean } {
+  return {
+    hops: s.trail.length,
+    troubled:
+      s.trail.some((h) => h.to < h.from) ||
+      s.stations.some((st) => st.mark === 'drift' || st.mark === 'dup'),
+  };
 }
 
 /** Where an item's chip sits: its slot in its home, or its place in the pile. */
@@ -412,13 +421,16 @@ function metrics(s: OwnershipState): [Metric, Metric, Metric] {
   const { labels } = s;
   const unowned = unownedCount(s);
   const sorted: Metric['tone'] = unowned === 0 ? 'good' : 'bad';
-  const { hops, loops } = pathLength(s);
+  const { hops, troubled } = pathLength(s);
   return [
     { value: format(labels.kindsOf, { n: kindsInUse(s), total: BINS }), tone: sorted },
     { value: String(unowned), tone: sorted },
     hops === 0
       ? { value: labels.none }
-      : { value: format(labels.hops, { n: hops }), tone: loops ? 'bad' : 'good' },
+      : {
+          value: format(hops === 1 ? labels.hop : labels.hops, { n: hops }),
+          tone: troubled ? 'bad' : 'good',
+        },
   ];
 }
 
