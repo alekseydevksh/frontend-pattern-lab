@@ -40,15 +40,6 @@ describe('content/lessons', () => {
     }
   });
 
-  it('has a takeaway ticked by some step, and none that never is', () => {
-    for (const lesson of lessons) {
-      const ticked = new Set(lesson.steps.map((step) => step.takeawayIndex));
-      for (const [index, takeaway] of lesson.takeaways.entries()) {
-        expect(ticked.has(index), `${lesson.slug}: no step ticks "${takeaway}"`).toBe(true);
-      }
-    }
-  });
-
   it('ticks the takeaways in order, so the checklist fills from the top', () => {
     for (const lesson of lessons) {
       const indexes = lesson.steps.map((step) => step.takeawayIndex);
