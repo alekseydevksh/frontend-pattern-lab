@@ -159,6 +159,9 @@ Besides the spec's M6 entry (README, docs, social previews, screen reader pass, 
 
 - [ ] Verdict table readable on a phone without sideways scrolling.
 - [ ] Diagrams readable at 375 px without inner scrolling, or with a clear scroll hint.
+- [ ] Editorial pass on lessons 1 to 6: add a seventh step to lesson 5 on what React Compiler,
+      `useTransition` and `useDeferredValue` change, and check every lesson for a "when not to use it"
+      statement (rules in [EDITORIAL.md](EDITORIAL.md); every claim about React goes in its fact log).
 
 ## Lessons
 
@@ -174,3 +177,12 @@ Besides the spec's M6 entry (README, docs, social previews, screen reader pass, 
 - [ ] 10. Progressive Rendering
 - [ ] 11. Permission-Aware UI
 - [ ] 12. Errors and Observability
+
+## Later (v2)
+
+Not part of v1. Candidates for a second release, each as a lesson of its own:
+
+- Rendering strategies: server-side rendering, static generation, server components and single-page apps
+- Testing strategy
+- Feature flags
+- API contracts

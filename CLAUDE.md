@@ -24,6 +24,7 @@ Spec: docs/SPEC.md. Visual reference: reference/prototype.html (not shipped).
 
 - Write lesson text in original words. Never copy from the source article or the sample site.
 - Numbers drawn in diagrams are labelled illustrative or simulated.
+- Editorial rules (when not to use a pattern, verified modern notes, the fact log, no library names): docs/EDITORIAL.md.
 - Every step needs a sceneAlt sentence.
 - No visible text hard-coded in components or scenes. Lesson text goes in content/,
   interface text in messages/en.json. English only for now, but keep it translation-ready.
