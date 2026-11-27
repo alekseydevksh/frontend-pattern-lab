@@ -4,17 +4,6 @@
 import type { Metric, SceneDefinition } from '@/engine/types';
 import { cx } from '@/lib/cx';
 import { format } from '@/lib/format';
-import {
-  cap,
-  ease,
-  microWidth,
-  note,
-  panel,
-  small,
-  toneStroke,
-  toneText,
-  type ToneKey,
-} from '@/components/scenes/sceneKit';
 
 /**
  * Scene for lesson 8, Container, View, ViewModel: one offer, from the backend's payload to the
@@ -29,9 +18,35 @@ import {
  * that are still in the view are listed under a heading that says so.
  *
  * Pure: the same state always draws the same SVG. Positions are constants of the drawing and every
- * word on screen comes from the state, which comes from the lesson data. Only the style strings, the
- * tone maps and the character-width maths of `sceneKit` are used, not its components (D20).
+ * word on screen comes from the state, which comes from the lesson data. The styles it uses are
+ * written out below, not imported from `sceneKit` (D22).
  */
+
+// The few styles this scene uses, written out here and not imported from `sceneKit`: a module that
+// two lesson routes import is put in a chunk of its own, which costs each page about 0.4 KB
+// (D21, D22). The same strings live in `sceneKit` for the lessons that gain from sharing them.
+const cap = 'font-mono text-label tracking-caps-wide';
+const panel = 'fill-panel stroke-line stroke-[1.5]';
+const small = 'font-mono text-micro fill-muted-text';
+const note = 'font-body text-micro fill-muted-text';
+const ease = 'transition-[stroke,fill,opacity] duration-(--duration-ui)';
+type ToneKey = 'req' | 'res' | 'ev' | 'bad' | 'muted';
+const toneStroke = {
+  req: 'stroke-req',
+  res: 'stroke-res',
+  ev: 'stroke-ev',
+  bad: 'stroke-bad',
+  muted: 'stroke-muted',
+} as const satisfies Record<ToneKey, string>;
+const toneText = {
+  req: 'fill-req-text',
+  res: 'fill-res-text',
+  ev: 'fill-ev-text',
+  bad: 'fill-bad-text',
+  muted: 'fill-muted-text',
+} as const satisfies Record<ToneKey, string>;
+/** The advance of one character of IBM Plex Mono at the micro size. */
+const MICRO_CHAR = 6.3;
 
 export type Job = 'fetch' | 'decide' | 'draw';
 
@@ -126,6 +141,9 @@ const BOX = { x: 16, w: 608, h: 328 } as const;
 const ROW = { y: 96, pitch: 28 } as const;
 const PAYLOAD_ROW = 20;
 const MAP_ROW = 32;
+
+/** The width of a chip around `text` in the micro mono size: its characters plus `padding`. */
+const microWidth = (text: string, padding: number) => text.length * MICRO_CHAR + padding;
 
 /** The decisions in the view, or in the single component: what the third metric counts. */
 export function logicCount(s: LayersState): number {
