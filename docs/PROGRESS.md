@@ -127,6 +127,17 @@ Not a lesson: the preparation the owner asked for before lesson 4 (D16).
 - [x] Lesson page JavaScript 147.0 KB gzipped (limit 150 KB); no other page changed in size
 - [ ] The owner checks the look (screenshots: see the pull request)
 
+### Lesson 6 acceptance criteria
+
+- [x] Content validation passes (`pnpm test`: `content/lessons/lessons.test.ts` and the catalog test)
+- [x] The end-to-end test plays it from the first step to the last with the keyboard, and checks the metrics,
+      the homes, the update path's marks and the verdict table (`e2e/lesson-06-state-ownership.spec.ts`)
+- [x] axe is clean in both themes, on the final state of every step and with a packet in flight
+- [x] Checked at desktop (1280 px) and phone width (375 px): no layout shift, the step card keeps its height,
+      the metric labels and values fit, the page never scrolls sideways; screenshots of every step in both themes
+- [x] Lesson page JavaScript 146.8 KB gzipped (limit 150 KB); no other page changed in size
+- [ ] The owner checks the look (owner checkpoint before lessons 7 to 12; screenshots: see the pull request)
+
 ### M6 acceptance criteria
 
 Besides the spec's M6 entry (README, docs, social previews, screen reader pass, final Lighthouse):
@@ -140,7 +151,7 @@ Besides the spec's M6 entry (README, docs, social previews, screen reader pass, 
 - [x] 3. Virtualization
 - [x] 4. Normalized Data
 - [x] 5. Rendering Isolation
-- [ ] 6. State Ownership
+- [x] 6. State Ownership
 - [ ] 7. Requirements First and Component Boundaries
 - [ ] 8. Container, View, ViewModel
 - [ ] 9. Backend for Frontend

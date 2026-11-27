@@ -824,3 +824,86 @@ No other page changed in size. The new page has 3.0 KB to spare.
 
 **Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices
 100, LCP 0.75 s, CLS 0.000, total blocking time 32 ms.
+
+## D19. Lesson 6, State Ownership, and the owner's answers to the lesson 5 questions (2026-11-27)
+
+No dependency was added. `src/engine/` is unchanged (`git diff main -- src/engine` is empty). The lesson is
+one data file, one scene, one page file and the catalog entry, as D16 describes; nothing else in `src/` or
+`content/` changed. Owner answers to the lesson 5 questions, recorded:
+
+1. **The shared metric tile stays as it is.** The new lesson procedure now says a metric value is at most
+   seven characters, so it fits a 375 px phone.
+2. **The "value fits its tile" check is shared.** `e2e/metric-labels.spec.ts` now plays every step of every
+   ready lesson at 375 px and fails if a value is wider than its tile or wraps. Lesson 5's spec keeps only its
+   sideways-scroll check. All six lessons pass.
+3. **The verdict table's verdict column off-screen on a phone** waits for M6: the line "Verdict table
+   readable on a phone without sideways scrolling" is in `docs/PROGRESS.md`.
+
+**Choices the spec did not settle**
+
+- **The outline's scene, with the owner's two ideas inside it.** The owner suggested one screen with
+  several kinds of state, the copies that drift when a value has two owners, and a derived value stored
+  instead of computed, "if the outline agrees". The outline asks for five bins, a pile of items that sorts
+  into them, and a click along a one-way path, so the scene follows the outline. The two ideas fit inside it:
+  step 1's update path shows the filter with two owners (the store and the URL) drifting OUT OF SYNC and
+  then held by TWO OWNERS, and the derived total is in step 2's text and the verdict table.
+- **Six steps, the outline's six.** One global store, five homes, the promise each home keeps, the tool
+  last, one direction, and "where does it live?" (the verdict table).
+- **The scene is a small simulation** of one offers page with eight items: offers, filter, modal, theme,
+  job, profile, draft, sort. Three bands: the global store (the pile), the five homes, and the update path.
+  An item's home is one field (`home`); its chip's place is computed from it and slides there with a CSS
+  transform (no transition with reduced motion). The layout is a constant of the drawing; every word is
+  lesson data.
+- **Words as well as colours.** The store says NO SINGLE OWNER while it holds anything; an empty home says
+  "empty" and has a dashed border; a station says REACHED, OUT OF SYNC or TWO OWNERS; a hop backwards is a
+  red dashed arrow under the stations with the words "copies back".
+- **Metrics follow the outline** and are computed from the state. "State kinds" is the homes in use out of
+  five (`0 of 5` to `5 of 5`); "Unowned items" is the items still in the global store (`8` to `0`); both are
+  red until every item has a home. "Update path length" counts hops (`1 hop`, `4 hops`): red when a hop went
+  back or a station holds a copy out of sync or a second owner, teal otherwise, and `—` before any update.
+  Every value is at most seven characters.
+- **Step 1 loops, step 5 does not.** Step 1: click, store, URL, back to the store, then the screen: four hops,
+  one backwards. Step 5: click, handler, owner (the URL), screen: three hops, all forward. The metric is about
+  direction more than length; the outline asked for length, so both are shown.
+- **The last step starts from the sorted state**, so its metrics read `5 of 5`, `0`, `—` next to the verdict
+  table instead of the base state's red `0 of 5` and `8`.
+- **No library is named.** Tools are drawn as kinds (request cache, component, search params, storage,
+  subscription). Code samples use React's `useState` and `useEffect`, and helpers written for this
+  project (`useCachedRequest`, `useSearchParam`, `useStored`, `useLiveEvent`); each is four to six lines.
+- **Numbers and names.** The page, its items and the hops are made up; the drawing says "illustrative page ·
+  simulated hops" and step 1's text says the page, items and counts are illustrative.
+- **Verdict tones.** The four plain homes are `ok`; "Event, then refetch" and "Derive it, no home" are
+  `warn`, since each asks for a rule rather than a place. Verdicts were kept short ("Event, then refetch",
+  not "Real-time event, then refetch") so none wraps.
+- **Colours keep their meaning**: teal for the server home and for tools, orange for client UI and URL (user
+  intent) and for the update's path, violet for the real-time home, grey for persistent, red for the second
+  owner, drift and the hop back.
+- **Layout.** The viewBox is 640 by 464, taller than lesson 5's 408, for three bands. Lanes: `fwd0` to `fwd2`
+  above the stations and `back0` to `back2` below them (used with `dir: 'back'`).
+
+**Tests**
+
+- `src/components/scenes/StateOwnershipScene.test.tsx`: the counts, the metrics and their tones, values
+  within seven characters for every step's start, the store and home words, chip places, guarantees and
+  tools, station words and the hop back, the lanes, and the same picture for the same state.
+- `e2e/lesson-06-state-ownership.spec.ts`: the whole lesson with the keyboard against a frozen clock (metrics,
+  homes and station marks after the frames, the packets, the verdict table, back to step 1), the takeaways,
+  Space and R, reduced motion, 375 px, and axe in both themes on every step and with a packet in flight. The
+  shared checks pick the lesson up from the catalog.
+
+**JavaScript per route, from the export** (gzipped, level 9):
+
+| Route                           | Before (main)     | After (this branch) | Of which its own file |
+| ------------------------------- | ----------------- | ------------------- | --------------------- |
+| `/` (catalog)                   | 139.2 KB, 8 files | 139.2 KB, 8 files   | none, and no scene    |
+| `/lessons/optimistic-ui/`       | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.7 KB                |
+| `/lessons/push-pull-sync/`      | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.6 KB                |
+| `/lessons/virtualization/`      | 147.1 KB, 8 files | 147.1 KB, 8 files   | 9.4 KB                |
+| `/lessons/normalized-data/`     | 146.8 KB, 8 files | 146.8 KB, 8 files   | 9.2 KB                |
+| `/lessons/rendering-isolation/` | 147.0 KB, 8 files | 147.0 KB, 8 files   | 9.3 KB                |
+| `/lessons/state-ownership/`     | none              | 146.8 KB, 8 files   | 9.1 KB                |
+
+No other page changed in size. The new page has 3.2 KB to spare.
+
+**Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices
+100, LCP 0.75 s, CLS 0.000, total blocking time 37 ms.
