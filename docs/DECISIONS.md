@@ -907,3 +907,131 @@ No other page changed in size. The new page has 3.2 KB to spare.
 
 **Lighthouse** (mobile profile, median of 5): the lesson page performance 100, accessibility 100, best practices
 100, LCP 0.75 s, CLS 0.000, total blocking time 37 ms.
+
+## D20. Lesson tooling, a preparation pull request (2026-11-27)
+
+No dependency was added, `src/engine/` is unchanged (`git diff main -- src/engine` is empty), no lesson's text or
+data changed, and no scene changed. Owner answers to the lesson 6 questions, recorded:
+
+1. Lesson 6 stays as it is.
+2. Diagrams scrolling inside their box on a phone is accepted until M6; `docs/PROGRESS.md` has the line under M6.
+3. The speed-up is accepted: the shared tooling first (this pull request), then lessons 7 to 12 two at a time.
+
+**What was built** (the owner's list)
+
+1. **One shared end-to-end spec, fed by the lesson data.** `e2e/lesson-shared.spec.ts` loops over the ready lessons
+   in the catalog and loads each lesson's data (`loadLesson(slug)` in `e2e/lesson-helpers.ts`). It checks the
+   takeaways (expected from each step's `takeawayIndex`), Space and R, reduced motion, no sideways scroll at
+   375 px, and axe in both themes on every step and with a packet in flight. A lesson's own spec now holds only
+   its step-by-step play-through. Lessons 3 to 6 lost those blocks from their specs; lessons 1 and 2 keep theirs
+   in `lessons.spec.ts` and gain the shared ones.
+2. **A shared scene module**, `src/components/scenes/sceneKit.tsx`: the styles, the colour of each tone, `Bracket`,
+   `PanelBox`, `StateChip`, `BoundaryLabel` and the character-width maths. See "Sharing costs bytes" below: it is
+   built, tested and guarded, and no existing scene uses it.
+3. **Shared scene test helpers**, `src/components/scenes/sceneTest.tsx`: `drawScene`, `canonical`, `fadedText`,
+   `isFaded` and `expectSamePicture`. The tests of lessons 1 and 3 to 6 use them (133 lines fewer in those tests).
+4. **`pnpm budget` prints the size table as a markdown table** (route, gzipped JavaScript, limit, files, its own
+   file, scene). `--json` is unchanged.
+5. **A pull request template** for lessons, `.github/PULL_REQUEST_TEMPLATE/lesson.md` (use it with
+   `gh pr create --template lesson.md`). It is not the default template, so other pull requests are not affected.
+6. **`pnpm check:lesson <slug>`** (`scripts/check-lesson.mjs`): lint, types, formatting, the unit tests, the build,
+   the budget, the end-to-end tests that cover the lesson, the Storybook build and Lighthouse on the lesson page,
+   in one run, with `caffeinate` keeping the Mac awake. It prints and saves a markdown block
+   (`.lesson-checks/<slug>/report.md`, not in git) with each check's result, the size table and the Lighthouse
+   numbers.
+7. **Timings from frame times: done.** `playhead(page, lesson)` gives `run.toFrame(k)` and `run.next()`; the
+   play-throughs of lessons 3 to 6 now name a frame instead of a time (67 hand-written waits changed; every one
+   landed on a frame time, so none needed a judgement). The shared checks read their times from the frames too.
+8. **Docs:** the "New lesson procedure", a new "Two lessons at a time" section, and CLAUDE.md.
+
+**Sharing costs bytes: why lessons 3 to 6 do not use the shared module**
+
+A lesson page loads one scene. So sharing code between scenes can never make a page smaller: the page still carries
+everything its scene uses, now through a module boundary, and anything in the shared module that another scene
+uses and this one does not. I moved the repeated blocks of lessons 3 to 6 into the module and built five layouts,
+measuring each page's gzipped JavaScript against main (bytes; lessons 1 and 2 and the catalog never changed):
+
+| Layout of the shared module                                  | Pages that grew | Growth per page (bytes) |
+| ------------------------------------------------------------ | --------------- | ----------------------- |
+| Everything in one module, used by all four scenes            | 4 of 4          | +544 to +775            |
+| Styles in one module, components in three, `Bracket` shared  | 3 of 4          | +428, +497, +77         |
+| Styles and tone maps only (six strings, two maps, the maths) | 4 of 4          | +25 to +55              |
+| Three strings only (`cap`, `small`, `ease`)                  | 4 of 4          | +8 to +41               |
+
+What happens: a function or component that two lesson routes share is put in a chunk of its own, with a copy of
+`LessonRoute`, which splits each page into two gzip streams and costs about 0.45 KB per page (the two pages that
+share `Bracket` grew by 428 and 497 bytes in the second row). Constants alone stay in the page's own chunk, but
+their module wrapper and the exports the page does not use still cost 8 to 55 bytes. The owner's condition is that no page grows, so **lessons 3 to 6 keep their own
+copies** and the module is for new scenes. Moving them over is possible whenever the owner accepts the numbers
+above (see the open questions in the pull request). The SVG of every step is identical either way.
+
+The module is still worth having for lessons 7 to 12: a new scene that repeats a block has the same cost whether
+it copies it or imports it, apart from the 8 to 55 bytes, and the module is where the blocks are tested once. Each
+new lesson's size is in `pnpm budget`.
+
+**Guards**
+
+- `src/components/scenes/boundaries.test.ts` and ESLint `no-restricted-imports` rules (`eslint.config.mjs`): only
+  scenes import `sceneKit`; only tests import `sceneTest`; a scene imports no other scene and no lesson data; the
+  kit imports no scene. The test runs the rule over the whole tree and over deliberately broken trees.
+- `pnpm budget` still fails a lesson page that carries or names another lesson's scene (D16).
+
+**Choices the spec did not settle**
+
+- **The shared spec covers lessons 1 and 2 as well.** One loop over the catalog is simpler than a list, and it
+  costs 16 more end-to-end tests in total (157 before, 173 after).
+- **Reduced motion is checked against a full play.** For each step, the diagram (or verdict table) a reduced-motion
+  visitor sees at once must equal the picture a full play ends in, with the clock frozen and run to the step's last
+  frame plus a packet's flight. That replaces four hand-written reduced-motion tests, each of which named a few
+  marks, with one that compares the whole picture. The markup is compared with attributes in a fixed order and the
+  `style` text as the browser parses it (the server writes `translate(0px, 0)`, an update leaves
+  `translate(0px, 0px)`).
+- **Space and R** pause after step 1's first frame (or at 0 if it has one time), hold for a minute, resume, check
+  that the step plays on and every packet lands, replay, check the first picture is back, and play again to the
+  same end. Step 1 of a lesson must have frames; the test says so if it has none.
+- **A new content rule: takeaways are ticked in order** (`takeawayIndex` never goes down from one step to the next),
+  so the checklist fills from the top. The spec does not say it; all six lessons already follow it. The engine's own
+  validation already fails an out-of-range index and a takeaway no step ticks.
+- **A metric value is checked at every frame** in `content/lessons/lessons.test.ts` (at most seven characters), for
+  every lesson, so a lesson's scene test need not repeat it. Lesson 6's own test of it was removed.
+- **`pnpm check:lesson` carries on past a failure** so one run shows everything that is wrong; the steps that need
+  the build are skipped if it fails. It runs the whole unit suite (it takes seconds) and, for end-to-end, the
+  lesson's own spec, the shared spec filtered to the lesson, and the four specs that read every ready lesson
+  (step card, layout shift, metric labels, shell); `pnpm test:e2e` runs everything.
+- **The pull request template is not the default one**, because the repository has other kinds of pull request.
+
+**Proof that the pictures did not change.** A throwaway test (not committed) rendered the SVG of lessons 1 to 6 for
+the start state of every step and after every frame, 160 states, with each scene's metrics, on `main` and on this
+branch: the two files are byte-identical. The built export agrees: the CSS file is identical, and every page's HTML
+(the catalog and the six lesson pages, which hold the first paint of step 1) is identical apart from Next.js's build
+id.
+
+**Deliberate breakages** (each applied, run, and reverted):
+
+| Breakage                                                          | Caught by                                                                              |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `takeawayIndex: 9` in a lesson with four takeaways                | `lessons.test.ts`: "takeawayIndex 9 is out of range", and the order test               |
+| A step ticking takeaway 5 before takeaway 2                       | `lessons.test.ts`: "no step ticks takeaway 1", and the order test                      |
+| No step ticking the last takeaway                                 | `lessons.test.ts`: "no step ticks takeaway 4"                                          |
+| A metric value of `4 hops taken` (12 characters)                  | `lessons.test.ts` (names the step and frame) and `e2e/metric-labels.spec.ts` ("wraps") |
+| An empty `sceneAlt`                                               | `lessons.test.ts`: "sceneAlt is empty"; the shared axe check fails on that lesson      |
+| A scene importing another lesson's scene                          | ESLint, `boundaries.test.ts`, and `pnpm budget` ("includes another lesson's scene")    |
+| A scene that counts its draws (a picture that depends on history) | the scene's same-picture test; the shared Space and R check and reduced-motion check   |
+| The checklist ticking the next item instead (app code, mutated)   | the shared takeaways check, "step 1 of 6"                                              |
+
+The shared takeaways check compares the page with the lesson data, so it catches a page that ticks the wrong item,
+not a wrong index in the data; the unit rules above catch those.
+
+**JavaScript per route, from the export** (gzipped, level 9; bytes are the same on `main` and on this branch):
+
+| Route                           | Before (main)     | After (this branch) | Of which its own file |
+| ------------------------------- | ----------------- | ------------------- | --------------------- |
+| `/` (catalog)                   | 139.2 KB, 8 files | 139.2 KB, 8 files   | none, and no scene    |
+| `/lessons/optimistic-ui/`       | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.7 KB                |
+| `/lessons/push-pull-sync/`      | 146.3 KB, 8 files | 146.3 KB, 8 files   | 8.6 KB                |
+| `/lessons/virtualization/`      | 147.1 KB, 8 files | 147.1 KB, 8 files   | 9.4 KB                |
+| `/lessons/normalized-data/`     | 146.8 KB, 8 files | 146.8 KB, 8 files   | 9.2 KB                |
+| `/lessons/rendering-isolation/` | 147.0 KB, 8 files | 147.0 KB, 8 files   | 9.3 KB                |
+| `/lessons/state-ownership/`     | 146.8 KB, 8 files | 146.8 KB, 8 files   | 9.1 KB                |
+
+**Tests:** unit 527 before, 552 after (36 and 40 files); end-to-end 157 before, 173 after.
