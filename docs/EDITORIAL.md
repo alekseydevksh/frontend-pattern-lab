@@ -22,6 +22,8 @@ lessons 1 to 6 in M6 (see [PROGRESS.md](PROGRESS.md)).
 One row for each claim that a lesson makes about an API or a behaviour, and that someone could check.
 Add a row in the same pull request as the lesson text that relies on it.
 
-| Claim      | Source | Checked | Lesson |
-| ---------- | ------ | ------- | ------ |
-| _none yet_ |        |         |        |
+| Claim                                                                                                               | Source                                                                                     | Checked    | Lesson |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------- | ------ |
+| A custom Hook is a function whose name starts with `use` followed by a capital letter.                              | [Reusing Logic with Custom Hooks](https://react.dev/learn/reusing-logic-with-custom-hooks) | 2026-11-27 | 8      |
+| A custom Hook can call other Hooks, such as `useState` and `useEffect` (the page's `useOnlineStatus` example does). | [Reusing Logic with Custom Hooks](https://react.dev/learn/reusing-logic-with-custom-hooks) | 2026-11-27 | 8      |
+| Custom Hooks share stateful logic, not state itself: each call to a Hook is independent of every other call.        | [Reusing Logic with Custom Hooks](https://react.dev/learn/reusing-logic-with-custom-hooks) | 2026-11-27 | 8      |
